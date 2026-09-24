@@ -1,0 +1,51 @@
+<x-layouts.app titulo="Reporte de bodega">
+@php
+    $filas = fn ($col) => $col->map(fn ($r) => ['etiqueta' => $productos[$r->producto_id]?->nombre, 'valor' => (float) $r->total, 'nota' => $productos[$r->producto_id]?->unidad->abreviatura])->all();
+@endphp
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <p class="text-sm text-carbon-600">Del <b>@fecha($desde)</b> al <b>@fecha($hasta)</b></p>
+    <x-grafica.periodo :desde="$desde" :hasta="$hasta" />
+</div>
+
+<div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    @if ($costos)
+        <x-kpi titulo="Valor del inventario hoy" :valor="\App\Support\Formato::dinero($valor)" icono="etiqueta" tono="verde" />
+        <x-kpi titulo="Compras en el período" :valor="\App\Support\Formato::dinero($valorMovido['compras'])" icono="camion" tono="azul" />
+        <x-kpi titulo="Consumo de producción" :valor="\App\Support\Formato::dinero($valorMovido['produccion'])" icono="fabrica" />
+        <x-kpi titulo="Ajustes de salida (merma)" :valor="\App\Support\Formato::dinero($valorMovido['ajustes'])" icono="alerta" tono="rojo" :nota="'Repuestos de mantenimiento: '.\App\Support\Formato::dinero($valorMovido['mantenimiento'])" />
+    @else
+        <x-kpi titulo="Movimientos en el período" :valor="$porTipo->sum()" icono="flechas" />
+        <x-kpi titulo="Recepciones" :valor="$porTipo['entrada_compra'] ?? 0" icono="camion" tono="azul" />
+        <x-kpi titulo="Ingresos de producción" :valor="$porTipo['ingreso_produccion'] ?? 0" icono="paquete" tono="verde" />
+        <x-kpi titulo="Bajo el mínimo" :valor="$bajoMinimo->count()" icono="alerta" tono="rojo" />
+    @endif
+</div>
+
+<div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+    <section class="tarjeta"><div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Producto terminado ingresado</h3></div><div class="p-5"><x-grafica.barras :datos="$filas($producido)" color="bg-emerald-500" /></div></section>
+    <section class="tarjeta"><div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Materia prima entregada a producción</h3></div><div class="p-5"><x-grafica.barras :datos="$filas($consumido)" /></div></section>
+    <section class="tarjeta"><div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Más despachado</h3></div><div class="p-5"><x-grafica.barras :datos="$filas($despachado)" color="bg-sky-500" /></div></section>
+
+    <section class="tarjeta">
+        <div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Movimientos por tipo</h3></div>
+        <div class="p-5"><x-grafica.barras :datos="$porTipo->map(fn ($n, $t) => ['etiqueta' => \App\Models\Movimiento::TIPOS[$t]['nombre'] ?? $t, 'valor' => $n])->values()->all()" color="bg-carbon-700" /></div>
+    </section>
+    @if ($costos)
+    <section class="tarjeta">
+        <div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Valor por categoría</h3></div>
+        <div class="p-5"><x-grafica.barras :datos="$porCategoria->map(fn ($c) => ['etiqueta' => $c['nombre'], 'valor' => $c['valor']])->all()" formato="dinero" color="bg-emerald-600" /></div>
+    </section>
+    @endif
+    <section class="tarjeta overflow-hidden">
+        <div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Bajo el mínimo</h3><span class="insignia-roja">{{ $bajoMinimo->count() }}</span></div>
+        @forelse ($bajoMinimo as $p)
+            <a href="{{ route('productos.show', $p) }}" class="flex items-center justify-between gap-3 border-b border-carbon-50 px-5 py-2.5 text-sm last:border-0 hover:bg-carbon-50">
+                <span class="truncate">{{ $p->nombre }}</span>
+                <span class="shrink-0 tabular-nums"><b class="text-marca-700">@num($p->stockTotal())</b> / @num($p->stock_minimo) {{ $p->unidad->abreviatura }}</span>
+            </a>
+        @empty
+            <p class="px-5 py-8 text-center text-sm text-carbon-500">Todo por encima del mínimo.</p>
+        @endforelse
+    </section>
+</div>
+</x-layouts.app>

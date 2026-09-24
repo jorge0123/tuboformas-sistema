@@ -1,0 +1,124 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+@source '../../app/**/*.php';
+
+/* Paleta tomada de tuboformas.com: rojo de marca, carbón y grises cálidos. */
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Montserrat', 'Inter', ui-sans-serif, sans-serif;
+
+    --color-marca-50: #fff1f2;
+    --color-marca-100: #ffe0e2;
+    --color-marca-200: #ffc6ca;
+    --color-marca-300: #ff9ba2;
+    --color-marca-400: #ff5f6b;
+    --color-marca-500: #f2283a;
+    --color-marca-600: #d90016;
+    --color-marca-700: #b50013;
+    --color-marca-800: #960414;
+    --color-marca-900: #7c0a17;
+
+    --color-carbon-50: #f7f6f4;
+    --color-carbon-100: #efece8;
+    --color-carbon-200: #e2ded9;
+    --color-carbon-300: #cbc5be;
+    --color-carbon-400: #a39c94;
+    --color-carbon-500: #7d766f;
+    --color-carbon-600: #5f5953;
+    --color-carbon-700: #47423e;
+    --color-carbon-800: #2d2a27;
+    --color-carbon-900: #1f1d1b;
+    --color-carbon-950: #151412;
+}
+
+@utility btn { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold whitespace-nowrap transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50; }
+@utility insignia { @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap ring-1 ring-inset; }
+
+@layer base {
+    html { -webkit-tap-highlight-color: transparent; }
+    body { @apply bg-carbon-50 text-carbon-900 antialiased; }
+    h1, h2, h3 { font-family: var(--font-display); }
+    [x-cloak] { display: none !important; }
+    ::selection { @apply bg-marca-100 text-marca-900; }
+}
+
+@layer components {
+    /* Botones */
+    .btn-primario { @apply btn bg-marca-600 text-white shadow-sm hover:bg-marca-700 focus-visible:outline-marca-600; }
+    .btn-secundario { @apply btn bg-white text-carbon-800 shadow-sm ring-1 ring-carbon-200 ring-inset hover:bg-carbon-50 focus-visible:outline-carbon-400; }
+    .btn-oscuro { @apply btn bg-carbon-900 text-white shadow-sm hover:bg-carbon-800 focus-visible:outline-carbon-900; }
+    .btn-fantasma { @apply btn text-carbon-600 hover:bg-carbon-100 hover:text-carbon-900; }
+    .btn-peligro { @apply btn bg-white text-marca-700 ring-1 ring-marca-200 ring-inset hover:bg-marca-50; }
+    .btn-exito { @apply btn bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 focus-visible:outline-emerald-600; }
+    .btn-sm { @apply px-2.5 py-1.5 text-xs; }
+    .btn-icono { @apply btn p-2; }
+
+    /* Formularios */
+    .etiqueta { @apply mb-1.5 block text-sm font-medium text-carbon-700; }
+    .campo { @apply block w-full rounded-lg border-0 bg-white px-3 py-2 text-sm text-carbon-900 shadow-sm ring-1 ring-carbon-200 ring-inset placeholder:text-carbon-400 focus:ring-2 focus:ring-marca-500 focus:ring-inset disabled:bg-carbon-50 disabled:text-carbon-500; }
+    select.campo { @apply pr-9; }
+    .campo-error { @apply ring-marca-400; }
+    .ayuda { @apply mt-1 text-xs text-carbon-500; }
+    .error { @apply mt-1 text-xs font-medium text-marca-700; }
+    .check { @apply size-4 rounded border-carbon-300 text-marca-600 focus:ring-marca-500; }
+
+    /* Tarjetas */
+    .tarjeta { @apply rounded-xl bg-white shadow-sm ring-1 ring-carbon-200/70; }
+    .tarjeta-cabeza { @apply flex items-center justify-between gap-3 border-b border-carbon-100 px-5 py-3.5; }
+    .tarjeta-titulo { @apply font-display text-[15px] font-bold text-carbon-900; }
+    .tarjeta-cuerpo { @apply p-5; }
+
+    /* Tablas */
+    .tabla { @apply min-w-full divide-y divide-carbon-100 text-sm; }
+    .tabla thead th { @apply bg-carbon-50/80 px-4 py-2.5 text-left text-xs font-semibold tracking-wide whitespace-nowrap text-carbon-500 uppercase; }
+    .tabla tbody td { @apply px-4 py-3 align-middle text-carbon-700; }
+    .tabla tbody tr { @apply transition hover:bg-carbon-50/70; }
+    .tabla-num { @apply text-right tabular-nums; }
+
+    /* Insignias */
+    .insignia-gris { @apply insignia bg-carbon-50 text-carbon-600 ring-carbon-200; }
+    .insignia-roja { @apply insignia bg-marca-50 text-marca-700 ring-marca-200; }
+    .insignia-verde { @apply insignia bg-emerald-50 text-emerald-700 ring-emerald-200; }
+    .insignia-ambar { @apply insignia bg-amber-50 text-amber-800 ring-amber-200; }
+    .insignia-azul { @apply insignia bg-sky-50 text-sky-700 ring-sky-200; }
+    .insignia-violeta { @apply insignia bg-violet-50 text-violet-700 ring-violet-200; }
+    .insignia-oscura { @apply insignia bg-carbon-800 text-white ring-carbon-800; }
+
+    /* Navegación lateral */
+    .nav-grupo { @apply px-3 pt-5 pb-1.5 text-[11px] font-semibold tracking-wider text-carbon-500 uppercase; }
+    .nav-link { @apply relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-carbon-300 transition hover:bg-white/5 hover:text-white; }
+    .nav-link.activo { @apply bg-white/10 text-white; }
+    .nav-link.activo::before { content: ''; @apply absolute top-1.5 bottom-1.5 -left-3 w-1 rounded-r bg-marca-500; }
+
+    /* Pestañas */
+    .pestanas { @apply flex gap-1 overflow-x-auto border-b border-carbon-200; }
+    .pestana { @apply -mb-px cursor-pointer border-b-2 border-transparent px-3 py-2.5 text-sm font-semibold whitespace-nowrap text-carbon-500 transition hover:text-carbon-800; }
+    .pestana.activa { @apply border-marca-600 text-marca-700; }
+
+    .dato-etiqueta { @apply text-xs font-medium text-carbon-500; }
+    .dato-valor { @apply mt-0.5 text-sm font-medium text-carbon-900; }
+
+    /* Barra de progreso de OT */
+    .barra { @apply h-1.5 w-full overflow-hidden rounded-full bg-carbon-100; }
+    .barra > span { @apply block h-full rounded-full bg-marca-600 transition-all; }
+
+    /* Kanban */
+    .kanban-col.arrastrando-sobre { @apply bg-marca-50 ring-2 ring-marca-300; }
+    .kanban-tarjeta.arrastrando { @apply rotate-1 opacity-60; }
+}
+
+@keyframes vaciar { from { width: 100%; } to { width: 0%; } }
+@keyframes aparecer { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.aparecer { animation: aparecer 0.35s ease-out both; }
+
+.scroll-fino { scrollbar-width: thin; scrollbar-color: #47423e transparent; }
+
+@media print {
+    .no-imprimir { display: none !important; }
+    body { background: white; }
+}
