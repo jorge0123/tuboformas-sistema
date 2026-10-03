@@ -73,7 +73,7 @@
     </div>
     <div class="overflow-x-auto">
         <table class="tabla">
-            <thead><tr><th>Persona</th><th>Turno</th><th class="text-right">Días</th><th class="text-right">Faltas</th><th class="text-right">Marcado</th><th class="text-right">En órdenes</th><th class="text-right">Ocupación</th><th class="text-right">Tarde</th><th class="text-right">Extra</th><th class="text-right">OT completadas</th></tr></thead>
+            <thead><tr><th>Persona</th><th>Turno</th><th class="text-right">Días</th><th class="text-right">Faltas</th><th class="text-right">Marcado</th><th class="text-right">En órdenes</th><th class="text-right">Ocupación</th><th class="text-right">Tarde</th><th class="text-right">Salió antes</th><th class="text-right">Extra</th><th class="text-right">OT completadas</th></tr></thead>
             <tbody class="divide-y divide-carbon-50">
             @foreach ($personas as $p)
                 <tr>
@@ -85,6 +85,7 @@
                     <td class="tabla-num">{{ $fmt($p->en_ot) }}</td>
                     <td class="tabla-num font-bold">{{ $p->ocupacion !== null ? $p->ocupacion.'%' : '—' }}</td>
                     <td class="tabla-num">{{ $p->tardanzas ? $p->tardanzas.' · '.$p->min_tarde.' min' : '—' }}</td>
+                    <td class="tabla-num">{{ $p->salidas_antes ? $p->salidas_antes.' · '.$p->min_antes.' min' : '—' }}</td>
                     <td class="tabla-num">{{ $p->extra ? \App\Support\Formato::numero($p->extra, 1).' h' : '—' }}</td>
                     <td class="tabla-num">{{ $p->completadas }}</td>
                 </tr>

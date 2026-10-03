@@ -8,9 +8,9 @@
     <meta name="theme-color" content="#1f1d1b">
     <title>{{ $titulo ?? 'Inicio' }} · Tuboformas</title>
     <link rel="icon" href="{{ asset('img/favicon.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <link rel="apple-touch-icon" href="{{ asset('img/icono-192.png') }}">
+    <meta name="apple-mobile-web-app-title" content="Tuboformas">
     {{-- Antes de pintar: el menú queda como se dejó (contraído, secciones plegadas) y no "salta" al cargar. --}}
     <script>
         try {

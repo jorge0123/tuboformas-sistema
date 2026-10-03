@@ -5,7 +5,7 @@ La lógica del negocio, los roles y las reglas están en `docs/DISENO.md`: léel
 
 ## Stack
 - Laravel 12 (PHP 8.2+), MySQL 8, Blade + Tailwind v4 + Alpine.js, spatie/laravel-permission.
-- Se despliega en cPanel sin Node: los assets se compilan en local (`npm run build`) y se sube `public/build`. Ver `docs/DESPLIEGUE.md`.
+- Se instala en una PC con Windows de la planta (Laragon, IP fija, servicios): `docs/INSTALACION-WINDOWS.md` y scripts en `deploy/windows/`. También puede ir a cPanel: `docs/DESPLIEGUE.md`.
 
 ## Local
 - Laragon (MySQL root sin contraseña, base `tuboformas`).
@@ -19,6 +19,7 @@ La lógica del negocio, los roles y las reglas están en `docs/DISENO.md`: léel
 - La existencia de repuestos (`productos.existencia`) solo cambia en `App\Services\InventarioService`. Un movimiento confirmado no se edita: se anula con reverso.
 - El ciclo de una OT (crear, seguimiento, completar → bitácora) vive en `App\Services\OrdenTrabajoService`.
 - Asistencia y tiempo laboral de las OT (marcar entrada/salida, tramos por OT) viven en `App\Services\AsistenciaService`. Las horas de la OT se suman al cerrar cada tramo.
-- Avisos: `App\Notifications\Aviso` (campana + correo si el usuario lo tiene activo).
+- Avisos: `App\Notifications\Aviso` (campana + correo si el usuario lo tiene activo). Reportes por hora: `App\Services\ReporteProgramadoService` (Administración → Configuración).
+- El correo SMTP se configura desde el sistema (tabla `configuraciones`), no en el `.env` del servidor.
 - UI: nada de emojis, solo íconos `<x-icono n="...">`. Confirmaciones con `data-confirmar` en el `<form>` (nunca `confirm()`), avisos con `avisar()` en JS o `->with('ok', ...)`.
 - Clases de Tailwind siempre completas en el código (nada de `col-span-{{ $n }}`), o Tailwind no las genera.

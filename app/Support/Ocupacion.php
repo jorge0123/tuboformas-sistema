@@ -41,6 +41,8 @@ class Ocupacion
                 'ocupacion' => $marcadas > 0 ? (int) round(min(100, $enOt / $marcadas * 100)) : null,
                 'tardanzas' => $suyas->filter(fn ($a) => $a->minutosTarde() > 0)->count(),
                 'min_tarde' => $suyas->sum(fn ($a) => $a->minutosTarde()),
+                'salidas_antes' => $suyas->filter(fn ($a) => $a->minutosAntes() > 0)->count(),
+                'min_antes' => $suyas->sum(fn ($a) => $a->minutosAntes()),
                 'extra' => round($suyas->sum(fn ($a) => $a->horasExtra()), 2),
                 'sin_salida' => $suyas->where('salida_automatica', true)->count(),
                 'completadas' => (int) ($completadas[$u->id] ?? 0),

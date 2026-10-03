@@ -1,5 +1,10 @@
 import Alpine from 'alpinejs';
 import collapse from '@alpinejs/collapse';
+// Fuentes empaquetadas: el sistema funciona en la red de la planta aunque no haya internet.
+import '@fontsource-variable/inter';
+import '@fontsource/montserrat/600.css';
+import '@fontsource/montserrat/700.css';
+import '@fontsource/montserrat/800.css';
 import './vivo';
 import './movil';
 

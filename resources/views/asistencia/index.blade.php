@@ -86,6 +86,7 @@
         <select name="ver" class="campo w-auto">
             <option value="">Todas las marcas</option>
             <option value="tarde" @selected(request('ver') === 'tarde')>Llegadas tarde</option>
+            <option value="antes" @selected(request('ver') === 'antes')>Salidas antes de hora</option>
             <option value="sin_salida" @selected(request('ver') === 'sin_salida')>Salida sin marcar</option>
         </select>
         <input type="date" name="desde" value="{{ request('desde') }}" class="campo w-auto" onchange="this.form.requestSubmit()" title="Desde">
@@ -106,7 +107,7 @@
             <thead><tr>@if ($todos)<th>Persona</th>@endif<th>Fecha</th><th>Entrada</th><th>Salida</th><th class="text-right">Horas</th><th>Observaciones</th>@can('asistencia.gestionar')<th></th>@endcan</tr></thead>
             <tbody class="divide-y divide-carbon-50">
             @foreach ($registros as $a)
-                @php $tarde = $a->minutosTarde(); $extra = $a->horasExtra(); @endphp
+                @php $tarde = $a->minutosTarde(); $antes = $a->minutosAntes(); $extra = $a->horasExtra(); @endphp
                 <tr>
                     @if ($todos)<td class="font-semibold text-carbon-900">{{ $a->user->name }}</td>@endif
                     <td class="whitespace-nowrap tabular-nums">{{ ucfirst($a->fecha->translatedFormat('D d/m/Y')) }}</td>
@@ -117,6 +118,7 @@
                         <div class="flex flex-wrap gap-1">
                             @unless ($a->salida_at)<span class="insignia-verde">En turno</span>@endunless
                             @if ($tarde)<span class="insignia-ambar">{{ $tarde }} min tarde</span>@endif
+                            @if ($antes)<span class="insignia-ambar">Salió {{ $antes }} min antes</span>@endif
                             @if ($extra >= 0.25)<span class="insignia-azul">+{{ \App\Support\Formato::duracion($extra) }} extra</span>@endif
                             @if ($a->salida_automatica)<span class="insignia-roja">Salida sin marcar</span>@endif
                             @if ($a->corregida_por)<span class="insignia-gris" title="{{ $a->notas }}">Corregida por {{ $a->corrector?->name }}</span>@endif

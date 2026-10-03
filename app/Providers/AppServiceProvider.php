@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Configuracion;
 use App\Support\Permisos;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
@@ -22,6 +23,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(fn ($user) => $user->hasRole(Permisos::SUPER_ADMIN) ? true : null);
 
         Carbon::setLocale('es');
+
+        // El correo configurado desde el sistema (Configuración → Correo) manda sobre el .env.
+        try {
+            Configuracion::aplicarCorreo();
+        } catch (\Throwable) {
+            // Antes de migrar no existe la tabla.
+        }
         Paginator::defaultView('components.paginacion');
 
         Blade::directive('num', fn ($e) => "<?php echo e(\\App\\Support\\Formato::numero($e)); ?>");

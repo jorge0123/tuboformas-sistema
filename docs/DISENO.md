@@ -148,10 +148,33 @@ Lógica en `App\Services\AsistenciaService`; cálculos en `App\Support\Ocupacion
   la marca como *salida sin marcar* y avisa a la persona.
 - **Corrección** (`asistencia.gestionar`): se cambian entrada y salida con un motivo; si cambia la
   salida, el tramo que se cortó con ella se ajusta y la OT suma o resta esa diferencia.
-- **Ocupación** = horas en órdenes / horas marcadas. Llegada tarde: entrada después de la
-  tolerancia. Horas extra: lo marcado por encima de lo que dura el turno. Falta: día de turno sin marca.
+- **Ocupación** = horas en órdenes / horas marcadas. Contra su turno (con la tolerancia del turno):
+  - entra antes: cuenta desde que marca, no es falta ni tarde;
+  - entra después de la tolerancia: *llegada tarde* (minutos);
+  - sale antes de la tolerancia: *salió antes* (minutos); una salida que cerró el sistema no cuenta;
+  - sale después: suma a *horas extra* = horas marcadas − lo que dura el turno (neto: entrar antes y
+    salir antes se compensa). En un día que no le toca, todo lo marcado es extra;
+  - *falta*: día de turno sin marca.
+- **Sin turno** la persona no marca asistencia: no tiene botón, no se le exige para trabajar en OT
+  (captura las horas a mano) y no aparece en la ocupación.
 - Permisos: `asistencia.ver` (asistencia del personal y reporte de ocupación), `asistencia.gestionar`
   (turnos y correcciones).
+
+### 2.11 Configuración y reportes programados
+Administración → Configuración (permiso `configuracion.gestionar`).
+- **Reportes programados** (`envios_programados`): nombre, hora, días, período (lo de hoy, lo de
+  ayer o últimos 7 días), secciones (resumen de mantenimiento, agenda de hoy, órdenes atrasadas,
+  trabajo completado, asistencia y ocupación, repuestos por pedir), destinatarios (usuarios y
+  correos extra) y canales (correo y/o campana). Vienen dos de inicio: *Arranque del día* 8:00
+  (lo de ayer + agenda) y *Cierre del día* 19:00 (lo de hoy); sin destinatarios no se envían.
+- `php artisan reportes:enviar` (cada minuto) envía los que ya tocan: es su día, pasó su hora y hoy
+  no se han enviado. Si la PC estuvo apagada a esa hora, se envía al encender (hasta 3 h después).
+- Cada envío se guarda tal cual (`reportes_enviados`); la campana enlaza a esa copia. *Ver cómo
+  llega* muestra el reporte con los datos de ahora sin enviarlo; *Enviar ahora* lo manda ya.
+- Lógica en `App\Services\ReporteProgramadoService`; contenido en `App\Support\ReporteProgramado`;
+  plantilla en `resources/views/correos/reporte.blade.php` (estilos en línea, para clientes de correo).
+- **Correo de salida**: servidor SMTP, puerto, usuario, contraseña (cifrada) y remitente se guardan en
+  `configuraciones` y mandan sobre el `.env` (`Configuracion::aplicarCorreo()`). Botón de prueba.
 
 ## 3. Roles y permisos
 
@@ -214,7 +237,10 @@ Reglas que no dependen de la matriz:
   Avisos: OT asignada, nueva sin responsable o crítica, avance, comentario, en espera (a coordinadores),
   completada y cancelada; herramienta entregada y recibida; ajuste por aprobar, aprobado o rechazado;
   movimiento anulado; repuesto bajo el mínimo; conteo abierto y aplicado; salida sin marcar.
-- Despliegue en cPanel: ver `docs/DESPLIEGUE.md`.
+- Despliegue: en una PC de la planta con Windows, `docs/INSTALACION-WINDOWS.md` (IP fija, servicios,
+  tareas programadas, respaldos); en cPanel, `docs/DESPLIEGUE.md`.
+- Las fuentes van empaquetadas (sin Google Fonts) y hay `manifest.webmanifest`: funciona sin internet
+  en la red de la planta y se instala como app en el celular.
 
 ## 5. Pendiente / siguientes fases
 - Captura de producción por máquina (piezas, merma, paros) y OEE — la propuesta original.

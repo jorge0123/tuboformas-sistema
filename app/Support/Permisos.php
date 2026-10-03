@@ -87,6 +87,7 @@ class Permisos
                 'roles.gestionar' => 'Editar roles y permisos',
                 'catalogos.gestionar' => 'Editar catálogos (áreas, especialidades…)',
                 'auditoria.ver' => 'Ver la auditoría',
+                'configuracion.gestionar' => 'Configurar el correo y los reportes programados',
             ]],
         ];
     }
@@ -131,7 +132,7 @@ class Permisos
                 'Todo el módulo de mantenimiento, bodega de repuestos, proveedores y reportes del área.',
                 array_merge(
                     self::delModulo(['maquinas', 'ot', 'bitacora', 'planes', 'asistencia', 'herramientas', 'proveedores', 'inventario', 'movimientos', 'conteos']),
-                    ['dashboard.ver', 'reportes.mantenimiento', 'reportes.repuestos', 'reportes.exportar', 'usuarios.ver']
+                    ['dashboard.ver', 'reportes.mantenimiento', 'reportes.repuestos', 'reportes.exportar', 'usuarios.ver', 'configuracion.gestionar']
                 )],
             'admin_mantenimiento' => ['Administrador de mantenimiento',
                 'Coordina: crea y asigna OT, planes, calendario, herramientas y lleva la bodega de repuestos.',

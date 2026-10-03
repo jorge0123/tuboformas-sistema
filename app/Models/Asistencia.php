@@ -52,7 +52,24 @@ class Asistencia extends Model
         return $tarde > $this->turno->tolerancia ? $tarde : 0;
     }
 
-    /** Horas por encima de lo que dura su turno ese día (todo cuenta como extra en un día que no le toca). */
+    /**
+     * Minutos que salió antes del fin de su turno (más allá de la tolerancia). Una salida que cerró
+     * el sistema no cuenta: no se sabe a qué hora se fue.
+     */
+    public function minutosAntes(): int
+    {
+        if (! $this->turno || ! $this->salida_at || $this->salida_automatica || ! $this->turno->trabajaEl($this->fecha)) {
+            return 0;
+        }
+        $antes = (int) $this->salida_at->diffInMinutes($this->turno->finEl($this->fecha), false);
+
+        return $antes > $this->turno->tolerancia ? $antes : 0;
+    }
+
+    /**
+     * Horas por encima de lo que dura su turno ese día (neto: entrar antes y salir antes se compensa).
+     * En un día que no le toca, todo lo marcado es extra.
+     */
     public function horasExtra(): float
     {
         if (! $this->turno || ! $this->salida_at) {

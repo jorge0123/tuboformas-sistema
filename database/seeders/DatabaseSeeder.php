@@ -25,5 +25,8 @@ class DatabaseSeeder extends Seeder
         if (app()->environment('local') || env('SEED_DEMO')) {
             $this->call([DemoSeeder::class, DemoAmpliadoSeeder::class, DemoAsistenciaSeeder::class]);
         }
+
+        // Después de los usuarios de ejemplo, para que en local ya tengan destinatarios.
+        $this->call(ConfiguracionSeeder::class);
     }
 }

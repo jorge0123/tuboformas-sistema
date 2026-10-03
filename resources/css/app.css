@@ -9,8 +9,8 @@
 
 /* Paleta tomada de tuboformas.com: rojo de marca, carbón y grises cálidos. */
 @theme {
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Montserrat', 'Inter', ui-sans-serif, sans-serif;
+    --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Montserrat', 'Inter Variable', ui-sans-serif, sans-serif;
 
     --color-marca-50: #fff1f2;
     --color-marca-100: #ffe0e2;

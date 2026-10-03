@@ -49,6 +49,7 @@ class Menu
                 ['Roles y permisos', 'roles.index', 'escudo', ['roles.gestionar'], 'roles.*'],
                 ['Catálogos', 'catalogos.index', 'lista', ['catalogos.gestionar'], 'catalogos.*'],
                 ['Auditoría', 'auditoria', 'historial', ['auditoria.ver'], 'auditoria'],
+                ['Configuración', 'configuracion.index', 'engrane', ['configuracion.gestionar'], 'configuracion.*'],
             ],
         ];
 

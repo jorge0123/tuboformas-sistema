@@ -84,14 +84,15 @@ class AsistenciaController extends Controller
             ->when($todos && $request->filled('persona'), fn ($q) => $q->where('user_id', $request->persona))
             ->when($request->filled('desde'), fn ($q) => $q->whereDate('fecha', '>=', $request->desde))
             ->when($request->filled('hasta'), fn ($q) => $q->whereDate('fecha', '<=', $request->hasta))
-            ->when($request->input('ver') === 'tarde', fn ($q) => $q->whereIn('id', $this->idsTarde()))
+            ->when($request->input('ver') === 'tarde', fn ($q) => $q->whereIn('id', $this->ids(fn ($a) => $a->minutosTarde() > 0)))
+            ->when($request->input('ver') === 'antes', fn ($q) => $q->whereIn('id', $this->ids(fn ($a) => $a->minutosAntes() > 0)))
             ->when($request->input('ver') === 'sin_salida', fn ($q) => $q->where('salida_automatica', true));
     }
 
-    /** Ids de asistencias con llegada tarde (se calcula contra el turno de cada una). */
-    private function idsTarde(): array
+    /** Ids de asistencias que cumplen una condición contra su turno (llegada tarde, salida antes). */
+    private function ids(callable $condicion): array
     {
         return Asistencia::with('turno')->whereNotNull('turno_id')->whereDate('fecha', '>=', today()->subDays(120))->get()
-            ->filter(fn ($a) => $a->minutosTarde() > 0)->pluck('id')->all();
+            ->filter($condicion)->pluck('id')->all();
     }
 }
