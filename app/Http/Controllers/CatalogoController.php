@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Models\Auditoria;
-use App\Models\Bodega;
 use App\Models\CategoriaProducto;
 use App\Models\Especialidad;
 use App\Models\Unidad;
@@ -17,9 +16,8 @@ class CatalogoController extends Controller
     private const CATALOGOS = [
         'areas' => ['Áreas de planta', Area::class, 'Dónde está cada máquina.'],
         'especialidades' => ['Especialidades técnicas', Especialidad::class, 'Mecánico, eléctrico… para asignar y filtrar órdenes.'],
-        'bodegas' => ['Bodegas', Bodega::class, 'Lugares donde se guarda inventario.'],
-        'categorias' => ['Categorías de producto', CategoriaProducto::class, 'Para agrupar el inventario.'],
-        'unidades' => ['Unidades de medida', Unidad::class, 'Unidad base de cada producto.'],
+        'categorias' => ['Categorías de repuesto', CategoriaProducto::class, 'Para agrupar la bodega de repuestos (rodamientos, eléctricos…).'],
+        'unidades' => ['Unidades de medida', Unidad::class, 'En qué se lleva la existencia de cada repuesto.'],
     ];
 
     public function index(?string $catalogo = 'areas')
@@ -62,11 +60,6 @@ class CatalogoController extends Controller
         $reglas = ['nombre' => ['required', 'string', 'max:100', Rule::unique($tabla, 'nombre')->ignore($id)]];
         if ($catalogo === 'unidades') {
             $reglas['abreviatura'] = ['required', 'string', 'max:20'];
-        }
-        if ($catalogo === 'bodegas') {
-            $reglas['codigo'] = ['required', 'string', 'max:20', 'alpha_dash', Rule::unique('bodegas', 'codigo')->ignore($id)];
-            $reglas['descripcion'] = ['nullable', 'string', 'max:255'];
-            unset($reglas['nombre'][3]);
         }
 
         return $request->validate($reglas);

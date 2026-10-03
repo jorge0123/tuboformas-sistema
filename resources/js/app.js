@@ -1,9 +1,7 @@
 import Alpine from 'alpinejs';
 import collapse from '@alpinejs/collapse';
-import './bodega';
 import './vivo';
 import './movil';
-import './pedidos';
 
 const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
 

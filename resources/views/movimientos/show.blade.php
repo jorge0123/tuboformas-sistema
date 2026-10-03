@@ -30,8 +30,6 @@
 
     <dl class="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-carbon-100 pt-5 sm:grid-cols-4">
         <div><dt class="dato-etiqueta">Fecha</dt><dd class="dato-valor">@fecha($m->fecha)</dd></div>
-        @if ($m->bodegaOrigen)<div><dt class="dato-etiqueta">Sale de</dt><dd class="dato-valor">{{ $m->bodegaOrigen->nombre }}</dd></div>@endif
-        @if ($m->bodegaDestino)<div><dt class="dato-etiqueta">Entra a</dt><dd class="dato-valor">{{ $m->bodegaDestino->nombre }}</dd></div>@endif
         @if ($m->proveedor)<div><dt class="dato-etiqueta">Proveedor</dt><dd class="dato-valor"><a href="{{ route('proveedores.show', $m->proveedor) }}" class="hover:text-marca-700">{{ $m->proveedor->nombre }}</a></dd></div>@endif
         @if ($m->maquina)<div><dt class="dato-etiqueta">Máquina</dt><dd class="dato-valor"><a href="{{ route('maquinas.show', $m->maquina) }}" class="hover:text-marca-700">{{ $m->maquina->etiqueta() }}</a></dd></div>@endif
         @if ($m->orden)<div><dt class="dato-etiqueta">Orden de trabajo</dt><dd class="dato-valor"><a href="{{ route('ot.show', $m->orden) }}" class="hover:text-marca-700">{{ $m->orden->folio }}</a></dd></div>@endif
@@ -49,25 +47,24 @@
 </div>
 
 <section class="tarjeta mt-6 overflow-hidden">
-    <div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Productos</h3></div>
+    <div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Repuestos</h3></div>
     <div class="overflow-x-auto">
         <table class="tabla">
-            <thead><tr><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">En unidad base</th>@if ($costos)<th class="text-right">Costo u.</th><th class="text-right">Total</th>@endif</tr></thead>
+            <thead><tr><th>Repuesto</th><th class="text-right">Cantidad</th>@if ($costos)<th class="text-right">Costo u.</th><th class="text-right">Total</th>@endif</tr></thead>
             <tbody class="divide-y divide-carbon-50">
             @foreach ($m->lineas as $l)
                 <tr>
                     <td><a href="{{ route('productos.show', $l->producto) }}" class="font-semibold text-carbon-900 hover:text-marca-700">{{ $l->producto->nombre }}</a><p class="font-mono text-xs text-carbon-500">{{ $l->producto->codigo }}</p></td>
-                    <td class="tabla-num">@num($l->cantidad) {{ $l->presentacion?->nombre ?? $l->producto->unidad->abreviatura }}</td>
-                    <td class="tabla-num font-semibold">@num($l->cantidad_base) {{ $l->producto->unidad->abreviatura }}</td>
+                    <td class="tabla-num font-semibold">@num($l->cantidad) {{ $l->producto->unidad->abreviatura }}</td>
                     @if ($costos)
                         <td class="tabla-num">{{ $l->costo_unitario !== null ? 'Q '.number_format((float) $l->costo_unitario, 4) : '—' }}</td>
-                        <td class="tabla-num font-semibold">@dinero((float) $l->cantidad_base * (float) $l->costo_unitario)</td>
+                        <td class="tabla-num font-semibold">@dinero((float) $l->cantidad * (float) $l->costo_unitario)</td>
                     @endif
                 </tr>
             @endforeach
             </tbody>
             @if ($costos)
-            <tfoot><tr class="bg-carbon-50"><td colspan="4" class="px-4 py-3 text-right text-sm font-semibold">Total</td><td class="px-4 py-3 text-right font-display font-extrabold">@dinero($m->lineas->sum(fn ($l) => (float) $l->cantidad_base * (float) $l->costo_unitario))</td></tr></tfoot>
+            <tfoot><tr class="bg-carbon-50"><td colspan="3" class="px-4 py-3 text-right text-sm font-semibold">Total</td><td class="px-4 py-3 text-right font-display font-extrabold">@dinero($m->lineas->sum(fn ($l) => (float) $l->cantidad * (float) $l->costo_unitario))</td></tr></tfoot>
             @endif
         </table>
     </div>

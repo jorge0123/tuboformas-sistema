@@ -25,7 +25,7 @@
             </div>
             <div class="max-w-md">
                 <p class="text-sm font-semibold tracking-[0.2em] text-marca-100 uppercase">Sistema interno</p>
-                <h1 class="mt-3 font-display text-5xl leading-[1.05] font-extrabold">Mantenimiento y bodega, en un solo lugar.</h1>
+                <h1 class="mt-3 font-display text-5xl leading-[1.05] font-extrabold">Mantenimiento de planta, en un solo lugar.</h1>
                 <p class="mt-5 text-lg leading-relaxed text-marca-50/90">Máquinas con su ficha técnica, órdenes de trabajo con seguimiento, bitácora automática e inventario con evidencia fotográfica.</p>
             </div>
             <p class="text-sm text-marca-100/80">© {{ date('Y') }} Tuboformas Guatemala, S.A.</p>

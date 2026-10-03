@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Auditoria;
-use App\Models\Bodega;
 use App\Models\Especialidad;
 use App\Models\Maquina;
 use App\Models\OrdenTrabajo;
@@ -13,6 +12,7 @@ use App\Models\User;
 use App\Services\InventarioService;
 use App\Services\OrdenTrabajoService;
 use App\Support\Csv;
+use App\Support\Formato;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -97,12 +97,11 @@ class OrdenTrabajoController extends Controller
             'comentar' => true,
         ];
         $repuestos = $permisos['ejecutar'] && $ot->estaAbierta()
-            ? Producto::whereIn('tipo', ['repuesto', 'insumo'])->where('activo', true)->with(['unidad', 'existencias'])->orderBy('nombre')->get()
+            ? Producto::where('activo', true)->where('existencia', '>', 0)->with('unidad')->orderBy('nombre')->get()
             : collect();
-        $bodegas = Bodega::where('activo', true)->orderBy('nombre')->get();
         $proveedores = Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
 
-        return view('ot.show', compact('ot', 'permisos', 'repuestos', 'bodegas', 'proveedores'));
+        return view('ot.show', compact('ot', 'permisos', 'repuestos', 'proveedores'));
     }
 
     public function edit(OrdenTrabajo $ot)
@@ -216,27 +215,26 @@ class OrdenTrabajoController extends Controller
         return response()->json(['ok' => true, 'estado' => $ot->fresh()->estado]);
     }
 
-    /** Repuestos usados: salen de bodega como consumo de mantenimiento ligado a la OT. */
+    /** Repuestos usados: salen de la bodega de repuestos como consumo de mantenimiento ligado a la OT. */
     public function repuestos(Request $request, OrdenTrabajo $ot, InventarioService $inv)
     {
         $this->autorizarEjecucion($request->user(), $ot);
         $d = $request->validate([
-            'bodega_id' => ['required', 'exists:bodegas,id'],
             'lineas' => ['required', 'array', 'min:1'],
             'lineas.*.producto_id' => ['required', 'exists:productos,id'],
             'lineas.*.cantidad' => ['required', 'numeric', 'gt:0'],
         ]);
         $mov = $inv->registrar([
-            'tipo' => 'consumo_mantenimiento', 'bodega_origen_id' => $d['bodega_id'],
+            'tipo' => 'consumo_mantenimiento',
             'maquina_id' => $ot->maquina_id, 'orden_trabajo_id' => $ot->id, 'referencia' => $ot->folio.' · '.$ot->titulo,
         ], $d['lineas'], $request->user());
         $ot->seguimientos()->create([
             'user_id' => $request->user()->id, 'tipo' => 'avance',
             'texto' => 'Repuestos usados ('.$mov->folio.'): '.$mov->lineas()->with('producto')->get()
-                ->map(fn ($l) => \App\Support\Formato::numero($l->cantidad_base).' × '.$l->producto->nombre)->join(', '),
+                ->map(fn ($l) => Formato::numero($l->cantidad).' × '.$l->producto->nombre)->join(', '),
         ]);
 
-        return back()->with('ok', "Repuestos descontados de bodega ({$mov->folio}).");
+        return back()->with('ok', "Repuestos descontados de la bodega ({$mov->folio}).");
     }
 
     // ── Apoyo ──────────────────────────────────────────────────────────

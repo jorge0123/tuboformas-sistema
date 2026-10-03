@@ -7,33 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 class Movimiento extends Model
 {
     protected $fillable = [
-        'folio', 'tipo', 'efecto', 'estado', 'fecha', 'bodega_origen_id', 'bodega_destino_id',
-        'proveedor_id', 'maquina_id', 'orden_trabajo_id', 'movimiento_origen_id', 'documento',
+        'folio', 'tipo', 'efecto', 'estado', 'fecha', 'proveedor_id', 'maquina_id', 'orden_trabajo_id', 'movimiento_origen_id', 'documento',
         'referencia', 'notas', 'user_id', 'aprobado_por', 'aprobado_at', 'motivo_rechazo',
     ];
 
     protected $casts = ['fecha' => 'date', 'aprobado_at' => 'datetime'];
 
     /**
-     * Tipos de movimiento, en el orden del flujo de la planta.
-     * efecto: entrada | salida | traslado. aprobacion: queda pendiente si quien
+     * Tipos de movimiento de la bodega de repuestos.
+     * efecto: entrada | salida. aprobacion: queda pendiente si quien
      * lo registra no tiene movimientos.aprobar.
      */
     public const TIPOS = [
         'entrada_compra' => ['nombre' => 'Recepción de compra', 'efecto' => 'entrada',
-            'ayuda' => 'Materia prima, repuestos o insumos que llegan de un proveedor.'],
-        'salida_produccion' => ['nombre' => 'Salida a producción', 'efecto' => 'salida',
-            'ayuda' => 'Tubos o materia prima que se entregan a una máquina u operador.'],
-        'ingreso_produccion' => ['nombre' => 'Ingreso de producto terminado', 'efecto' => 'entrada',
-            'ayuda' => 'Producto contado y empacado en las mesas que entra a bodega.'],
-        'devolucion_produccion' => ['nombre' => 'Devolución de producción', 'efecto' => 'entrada',
-            'ayuda' => 'Material que producción no usó y regresa a bodega.'],
-        'salida_despacho' => ['nombre' => 'Despacho', 'efecto' => 'salida',
-            'ayuda' => 'Producto terminado que sale hacia un cliente o sucursal.'],
+            'ayuda' => 'Repuestos o insumos que llegan de un proveedor.'],
         'consumo_mantenimiento' => ['nombre' => 'Consumo en mantenimiento', 'efecto' => 'salida',
             'ayuda' => 'Repuestos usados en una orden de trabajo.'],
-        'traslado' => ['nombre' => 'Traslado entre bodegas', 'efecto' => 'traslado',
-            'ayuda' => 'Mueve existencia de una bodega a otra.'],
         'ajuste_entrada' => ['nombre' => 'Ajuste de entrada', 'efecto' => 'entrada', 'aprobacion' => true,
             'ayuda' => 'Corrige faltantes del sistema. Requiere aprobación.'],
         'ajuste_salida' => ['nombre' => 'Ajuste de salida', 'efecto' => 'salida', 'aprobacion' => true,
@@ -51,16 +40,6 @@ class Movimiento extends Model
     public function lineas()
     {
         return $this->hasMany(MovimientoLinea::class);
-    }
-
-    public function bodegaOrigen()
-    {
-        return $this->belongsTo(Bodega::class, 'bodega_origen_id');
-    }
-
-    public function bodegaDestino()
-    {
-        return $this->belongsTo(Bodega::class, 'bodega_destino_id');
     }
 
     public function proveedor()

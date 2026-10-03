@@ -48,7 +48,7 @@ class ReporteController extends Controller
         $repuestos = $costos ? MovimientoLinea::join('movimientos', 'movimientos.id', '=', 'movimiento_lineas.movimiento_id')
             ->where('movimientos.tipo', 'consumo_mantenimiento')->where('movimientos.estado', 'confirmado')
             ->whereBetween('movimientos.fecha', [$desde, $hasta])->whereNotNull('movimientos.maquina_id')
-            ->selectRaw('movimientos.maquina_id, sum(cantidad_base * coalesce(costo_unitario,0)) total')->groupBy('movimientos.maquina_id')->pluck('total', 'maquina_id') : collect();
+            ->selectRaw('movimientos.maquina_id, sum(cantidad * coalesce(costo_unitario,0)) total')->groupBy('movimientos.maquina_id')->pluck('total', 'maquina_id') : collect();
         $maquinas = Maquina::whereIn('id', $porMaquina->pluck('maquina_id'))->get()->keyBy('id');
 
         // Tendencia semanal: creadas vs completadas.
@@ -65,45 +65,51 @@ class ReporteController extends Controller
         return view('reportes.mantenimiento', compact('desde', 'hasta', 'k', 'porTipo', 'porTecnico', 'porMaquina', 'maquinas', 'repuestos', 'semanas', 'costos'));
     }
 
-    public function bodega(Request $request)
+    public function repuestos(Request $request)
     {
-        $this->authorize('reportes.bodega');
+        $this->authorize('reportes.repuestos');
         [$desde, $hasta] = $this->periodo($request);
         $costos = $request->user()->can('inventario.ver_costos');
 
-        $movs = Movimiento::whereBetween('fecha', [$desde, $hasta])->where('estado', 'confirmado')->where('tipo', '!=', 'reverso');
-        $porTipo = (clone $movs)->selectRaw('tipo, count(*) total')->groupBy('tipo')->pluck('total', 'tipo');
+        $porTipo = Movimiento::whereBetween('fecha', [$desde, $hasta])->where('estado', 'confirmado')->where('tipo', '!=', 'reverso')
+            ->selectRaw('tipo, count(*) total')->groupBy('tipo')->pluck('total', 'tipo');
 
         $lineas = fn (array $tipos) => MovimientoLinea::join('movimientos', 'movimientos.id', '=', 'movimiento_lineas.movimiento_id')
             ->whereIn('movimientos.tipo', $tipos)->where('movimientos.estado', 'confirmado')
             ->whereBetween('movimientos.fecha', [$desde, $hasta]);
+        $valorDe = fn (array $tipos) => (float) $lineas($tipos)->sum(DB::raw('cantidad * coalesce(costo_unitario,0)'));
 
-        $producido = $lineas(['ingreso_produccion'])->selectRaw('producto_id, sum(cantidad_base) total')->groupBy('producto_id')->orderByDesc('total')->limit(10)->get();
-        $despachado = $lineas(['salida_despacho'])->selectRaw('producto_id, sum(cantidad_base) total')->groupBy('producto_id')->orderByDesc('total')->limit(10)->get();
-        $consumido = $lineas(['salida_produccion'])->selectRaw('producto_id, sum(cantidad_base) total')->groupBy('producto_id')->orderByDesc('total')->limit(10)->get();
-        $productos = Producto::with('unidad')->whereIn('id', $producido->pluck('producto_id')->merge($despachado->pluck('producto_id'))->merge($consumido->pluck('producto_id')))->get()->keyBy('id');
+        // Lo más usado en las OT del período, en cantidad y en dinero.
+        $consumido = $lineas(['consumo_mantenimiento'])
+            ->selectRaw('producto_id, sum(cantidad) total, sum(cantidad * coalesce(costo_unitario,0)) valor')
+            ->groupBy('producto_id')->orderByDesc($costos ? 'valor' : 'total')->limit(10)->get();
+        $productos = Producto::with('unidad')->whereIn('id', $consumido->pluck('producto_id'))->get()->keyBy('id');
+        $porMaquina = $costos ? $lineas(['consumo_mantenimiento'])->whereNotNull('movimientos.maquina_id')
+            ->selectRaw('movimientos.maquina_id, sum(cantidad * coalesce(costo_unitario,0)) total')
+            ->groupBy('movimientos.maquina_id')->orderByDesc('total')->limit(10)->get() : collect();
+        $maquinas = Maquina::whereIn('id', $porMaquina->pluck('maquina_id'))->get()->keyBy('id');
 
         $valor = null;
         $porCategoria = collect();
         $valorMovido = null;
         if ($costos) {
-            $inventario = Producto::where('activo', true)->withSum('existencias', 'cantidad')->get();
-            $valor = $inventario->sum(fn ($p) => (float) $p->existencias_sum_cantidad * (float) $p->costo_promedio);
+            $inventario = Producto::where('activo', true)->get();
+            $valor = $inventario->sum(fn ($p) => (float) $p->existencia * (float) $p->costo_promedio);
             $cats = CategoriaProducto::pluck('nombre', 'id');
             $porCategoria = $inventario->groupBy('categoria_id')->map(fn ($g, $c) => [
                 'nombre' => $cats[$c] ?? 'Sin categoría',
-                'valor' => $g->sum(fn ($p) => (float) $p->existencias_sum_cantidad * (float) $p->costo_promedio),
+                'valor' => $g->sum(fn ($p) => (float) $p->existencia * (float) $p->costo_promedio),
             ])->sortByDesc('valor')->values();
             $valorMovido = [
-                'compras' => (float) $lineas(['entrada_compra'])->sum(DB::raw('cantidad_base * coalesce(costo_unitario,0)')),
-                'produccion' => (float) $lineas(['salida_produccion'])->sum(DB::raw('cantidad_base * coalesce(costo_unitario,0)')),
-                'mantenimiento' => (float) $lineas(['consumo_mantenimiento'])->sum(DB::raw('cantidad_base * coalesce(costo_unitario,0)')),
-                'ajustes' => (float) $lineas(['ajuste_salida'])->sum(DB::raw('cantidad_base * coalesce(costo_unitario,0)')),
+                'compras' => $valorDe(['entrada_compra']),
+                'mantenimiento' => $valorDe(['consumo_mantenimiento']),
+                'ajustes' => $valorDe(['ajuste_salida']),
             ];
         }
-        $bajoMinimo = Producto::with('unidad')->where('activo', true)->where('stock_minimo', '>', 0)->withSum('existencias', 'cantidad')->get()->filter->bajoMinimo();
+        $bajoMinimo = Producto::with('unidad')->where('activo', true)->bajoMinimo()->orderBy('nombre')->get();
 
-        return view('reportes.bodega', compact('desde', 'hasta', 'porTipo', 'producido', 'despachado', 'consumido', 'productos', 'valor', 'porCategoria', 'valorMovido', 'bajoMinimo', 'costos'));
+        return view('reportes.repuestos', compact('desde', 'hasta', 'porTipo', 'consumido', 'productos', 'porMaquina', 'maquinas',
+            'valor', 'porCategoria', 'valorMovido', 'bajoMinimo', 'costos'));
     }
 
     private function periodo(Request $request): array

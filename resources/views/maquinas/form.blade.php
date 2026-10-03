@@ -91,7 +91,7 @@
         <div class="tarjeta-cabeza">
             <div>
                 <h3 class="tarjeta-titulo">Partes y consumibles</h3>
-                <p class="text-xs text-carbon-500">Ej. lista de resistencias, filtros, fajas. Vincúlalas al repuesto de bodega para ver su existencia.</p>
+                <p class="text-xs text-carbon-500">Ej. lista de resistencias, filtros, fajas. Vincúlalas al repuesto de la bodega para ver su existencia.</p>
             </div>
             <button type="button" class="btn-secundario btn-sm" @click="partes.push({ grupo: '', especificacion: '', dimensiones: '', cantidad: 1, producto_id: '' })"><x-icono n="mas" clase="size-4" /> Parte</button>
         </div>

@@ -13,6 +13,8 @@ use Spatie\Permission\PermissionRegistrar;
  * Se puede volver a correr sin perder cambios: a los roles que ya existen solo
  * se les AGREGAN permisos nuevos (no se quitan los que un admin haya marcado).
  * Con --fresh (RESETEAR_ROLES=1) se reescriben exactamente como en el catálogo.
+ * Los permisos y roles de sistema que ya no están en el catálogo se eliminan; sus
+ * usuarios pasan al rol Consulta para que un administrador les asigne el que toca.
  */
 class RolesPermisosSeeder extends Seeder
 {
@@ -22,6 +24,14 @@ class RolesPermisosSeeder extends Seeder
 
         foreach (array_keys(Permisos::todos()) as $p) {
             Permission::findOrCreate($p, 'web');
+        }
+
+        Permission::whereNotIn('name', array_keys(Permisos::todos()))->delete();
+        foreach (Role::where('es_sistema', true)->whereNotIn('name', array_keys(Permisos::roles()))->get() as $viejo) {
+            foreach ($viejo->users as $u) {
+                $u->syncRoles(['consulta']);
+            }
+            $viejo->delete();
         }
 
         $resetear = (bool) env('RESETEAR_ROLES', false);

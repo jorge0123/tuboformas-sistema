@@ -4,12 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\Area;
 use App\Models\Bitacora;
-use App\Models\Bodega;
 use App\Models\CategoriaProducto;
 use App\Models\Especialidad;
 use App\Models\Herramienta;
 use App\Models\Maquina;
-use App\Models\OrdenTrabajo;
 use App\Models\PlanMantenimiento;
 use App\Models\Producto;
 use App\Models\Proveedor;
@@ -49,9 +47,6 @@ class DemoSeeder extends Seeder
             ['selvin', 'Selvin Ambrosio', 'tecnico', 'Técnico', 'Mecánico'],
             ['canche', 'Carlos Canché', 'tecnico', 'Técnico', 'Soldadura'],
             ['djose', 'José Pérez', 'tecnico', 'Técnico', 'Hidráulico / Neumático'],
-            ['gbodega', 'Marta Castillo', 'gerente_bodega', 'Gerente de bodega', null],
-            ['abodega', 'Luis Herrera', 'admin_bodega', 'Encargado de bodega', null],
-            ['auxbodega', 'Pedro Xicará', 'aux_bodega', 'Auxiliar de bodega', null],
             ['supervisor', 'Ana Morales', 'supervisor_produccion', 'Supervisora de producción', null],
             ['contador', 'Roberto Chávez', 'contador', 'Contador', null],
         ] as [$user, $nombre, $rol, $puesto, $especialidad]) {
@@ -153,7 +148,7 @@ class DemoSeeder extends Seeder
         foreach ([
             ['Yamasa', ['repuestos']], ['Hydraserv', ['servicios', 'repuestos']],
             ['HySeal', ['servicios']], ['Hidra Serv', ['servicios']],
-            ['Tubería y Plásticos S.A.', ['materia_prima']], ['Eléctrica Industrial Guatemala', ['repuestos']],
+            ['Eléctrica Industrial Guatemala', ['repuestos']],
         ] as [$nombre, $tipos]) {
             $prov[$nombre] = Proveedor::create(['nombre' => $nombre, 'tipos' => $tipos]);
         }
@@ -191,36 +186,23 @@ class DemoSeeder extends Seeder
             'trabajo_realizado' => 'Cambio de retenedor e instalación de nuevo horómetro', 'responsable_id' => $u['selvin']->id,
         ]);
 
-        // ── Productos e inventario inicial ──────────────────────────────────
+        // ── Bodega de repuestos ─────────────────────────────────────────────
         $cat = fn (string $n) => CategoriaProducto::where('nombre', $n)->value('id');
         $uni = fn (string $n) => Unidad::where('nombre', $n)->value('id');
-        $bod = fn (string $c) => Bodega::where('codigo', $c)->value('id');
 
         $prod = [];
         foreach ([
-            ['MP-TUB-12', 'Tubo PVC eléctrico 1/2" x 10 ft', 'materia_prima', 'Tubería PVC', '1/2"', 'Tubo', 200, [['Manojo', 40]]],
-            ['MP-TUB-34', 'Tubo PVC eléctrico 3/4" x 10 ft', 'materia_prima', 'Tubería PVC', '3/4"', 'Tubo', 200, [['Manojo', 32]]],
-            ['MP-TUB-1', 'Tubo PVC eléctrico 1" x 10 ft', 'materia_prima', 'Tubería PVC', '1"', 'Tubo', 100, [['Manojo', 25]]],
-            ['MP-RES-PVC', 'Resina de PVC', 'materia_prima', 'Resina y aditivos', null, 'Kilogramo', 500, [['Saco 25 kg', 25]]],
-            ['PT-COP-12', 'Copla PVC 1/2"', 'producto_terminado', 'Coplas', '1/2"', 'Pieza', 3000, [['Bolsa x 300', 300], ['Caja x 1200', 1200]]],
-            ['PT-COP-34', 'Copla PVC 3/4"', 'producto_terminado', 'Coplas', '3/4"', 'Pieza', 3000, [['Bolsa x 300', 300], ['Caja x 1200', 1200]]],
-            ['PT-COP-1', 'Copla PVC 1"', 'producto_terminado', 'Coplas', '1"', 'Pieza', 1500, [['Bolsa x 200', 200]]],
-            ['PT-COD-12', 'Codo / vuelta PVC 1/2"', 'producto_terminado', 'Codos / vueltas', '1/2"', 'Pieza', 2000, [['Bolsa x 100', 100]]],
-            ['PT-COD-34', 'Codo / vuelta PVC 3/4"', 'producto_terminado', 'Codos / vueltas', '3/4"', 'Pieza', 2000, [['Bolsa x 100', 100]]],
-            ['REP-RES-2350', 'Resistencia de banda 240-480V 2350W ø150x138mm', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 2, []],
-            ['REP-RES-675', 'Resistencia de banda 240-480V 675W ø150x33mm', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 1, []],
-            ['REP-RES-250', 'Resistencia de banda 110V 250W ø39x60mm', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 1, []],
-            ['REP-ORING-KIT', 'Kit de O-rings bloque electroválvula', 'repuesto', 'Repuestos hidráulicos', null, 'Unidad', 2, []],
-            ['REP-FILT-ABF', 'Filtro respiradero Schroeder ABF-3/10', 'repuesto', 'Repuestos hidráulicos', null, 'Unidad', 2, []],
-            ['INS-ACE-HID', 'Aceite hidráulico ISO 68', 'insumo', 'Lubricantes', null, 'Galón', 10, [['Cubeta 5 gal', 5]]],
-        ] as [$cod, $nom, $tipo, $c, $med, $unidad, $min, $pres]) {
+            ['REP-RES-2350', 'Resistencia de banda 240-480V 2350W ø150x138mm', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 2],
+            ['REP-RES-675', 'Resistencia de banda 240-480V 675W ø150x33mm', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 1],
+            ['REP-RES-250', 'Resistencia de banda 110V 250W ø39x60mm', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 1],
+            ['REP-ORING-KIT', 'Kit de O-rings bloque electroválvula', 'repuesto', 'Repuestos hidráulicos', null, 'Unidad', 2],
+            ['REP-FILT-ABF', 'Filtro respiradero Schroeder ABF-3/10', 'repuesto', 'Repuestos hidráulicos', null, 'Unidad', 2],
+            ['INS-ACE-HID', 'Aceite hidráulico ISO 68', 'insumo', 'Lubricantes', null, 'Galón', 10],
+        ] as [$cod, $nom, $tipo, $c, $med, $unidad, $min]) {
             $prod[$cod] = Producto::create([
                 'codigo' => $cod, 'nombre' => $nom, 'tipo' => $tipo, 'categoria_id' => $cat($c),
                 'medida' => $med, 'unidad_id' => $uni($unidad), 'stock_minimo' => $min,
             ]);
-            foreach ($pres as [$pn, $f]) {
-                $prod[$cod]->presentaciones()->create(['nombre' => $pn, 'factor' => $f]);
-            }
         }
         // Resistencias ligadas a la lista de la Inyectora 1.
         $iny->partes()->createMany([
@@ -229,46 +211,21 @@ class DemoSeeder extends Seeder
             ['grupo' => 'Resistencias', 'especificacion' => '110V 250W', 'dimensiones' => 'ø 39 mm x 60 mm largo', 'cantidad' => 1, 'producto_id' => $prod['REP-RES-250']->id],
         ]);
         $prov['Eléctrica Industrial Guatemala']->productos()->attach($prod['REP-RES-2350']->id, ['precio' => 650, 'dias_entrega' => 8]);
-        $prov['Tubería y Plásticos S.A.']->productos()->attach($prod['MP-TUB-34']->id, ['precio' => 18.5, 'dias_entrega' => 3]);
 
         $inv = app(InventarioService::class);
-        $pres = fn (string $cod, string $n) => $prod[$cod]->presentaciones()->where('nombre', $n)->value('id');
-        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(20), 'bodega_destino_id' => $bod('MP'),
-            'proveedor_id' => $prov['Tubería y Plásticos S.A.']->id, 'documento' => 'FAC-10482'], [
-                ['producto_id' => $prod['MP-TUB-12']->id, 'presentacion_id' => $pres('MP-TUB-12', 'Manojo'), 'cantidad' => 30, 'costo_unitario' => 460],
-                ['producto_id' => $prod['MP-TUB-34']->id, 'presentacion_id' => $pres('MP-TUB-34', 'Manojo'), 'cantidad' => 25, 'costo_unitario' => 592],
-                ['producto_id' => $prod['MP-TUB-1']->id, 'presentacion_id' => $pres('MP-TUB-1', 'Manojo'), 'cantidad' => 8, 'costo_unitario' => 700],
-                ['producto_id' => $prod['MP-RES-PVC']->id, 'presentacion_id' => $pres('MP-RES-PVC', 'Saco 25 kg'), 'cantidad' => 40, 'costo_unitario' => 312.5],
-            ], $u['abodega']);
-        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(18), 'bodega_destino_id' => $bod('REP'),
+        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(18),
             'proveedor_id' => $prov['Eléctrica Industrial Guatemala']->id, 'documento' => 'FAC-2231'], [
                 ['producto_id' => $prod['REP-RES-2350']->id, 'cantidad' => 4, 'costo_unitario' => 650],
                 ['producto_id' => $prod['REP-RES-675']->id, 'cantidad' => 2, 'costo_unitario' => 420],
                 ['producto_id' => $prod['REP-RES-250']->id, 'cantidad' => 2, 'costo_unitario' => 180],
                 ['producto_id' => $prod['REP-ORING-KIT']->id, 'cantidad' => 1, 'costo_unitario' => 350],
                 ['producto_id' => $prod['REP-FILT-ABF']->id, 'cantidad' => 3, 'costo_unitario' => 275],
-                ['producto_id' => $prod['INS-ACE-HID']->id, 'presentacion_id' => $pres('INS-ACE-HID', 'Cubeta 5 gal'), 'cantidad' => 4, 'costo_unitario' => 610],
-            ], $u['abodega']);
-        $inv->registrar(['tipo' => 'salida_produccion', 'fecha' => today()->subDays(10), 'bodega_origen_id' => $bod('MP'),
-            'maquina_id' => $maq['ENC2']->id, 'referencia' => 'Operador: línea de coplas'], [
-                ['producto_id' => $prod['MP-TUB-34']->id, 'presentacion_id' => $pres('MP-TUB-34', 'Manojo'), 'cantidad' => 6],
-                ['producto_id' => $prod['MP-TUB-12']->id, 'presentacion_id' => $pres('MP-TUB-12', 'Manojo'), 'cantidad' => 4],
-            ], $u['auxbodega']);
-        $inv->registrar(['tipo' => 'ingreso_produccion', 'fecha' => today()->subDays(8), 'bodega_destino_id' => $bod('PT'),
-            'referencia' => 'Mesas de conteo · turno A'], [
-                ['producto_id' => $prod['PT-COP-34']->id, 'presentacion_id' => $pres('PT-COP-34', 'Bolsa x 300'), 'cantidad' => 18],
-                ['producto_id' => $prod['PT-COP-12']->id, 'presentacion_id' => $pres('PT-COP-12', 'Bolsa x 300'), 'cantidad' => 12],
-                ['producto_id' => $prod['PT-COD-34']->id, 'presentacion_id' => $pres('PT-COD-34', 'Bolsa x 100'), 'cantidad' => 14],
-            ], $u['auxbodega']);
-        $inv->registrar(['tipo' => 'salida_despacho', 'fecha' => today()->subDays(3), 'bodega_origen_id' => $bod('PT'),
-            'documento' => 'ENV-5531', 'referencia' => 'Cliente: Ferretería El Martillo'], [
-                ['producto_id' => $prod['PT-COP-34']->id, 'presentacion_id' => $pres('PT-COP-34', 'Bolsa x 300'), 'cantidad' => 10],
-            ], $u['abodega']);
-        // Ajuste que registra el auxiliar: queda pendiente de aprobación.
-        $inv->registrar(['tipo' => 'ajuste_salida', 'fecha' => today()->subDay(), 'bodega_origen_id' => $bod('PT'),
-            'notas' => 'Bolsa dañada por humedad en el área de empaque'], [
-                ['producto_id' => $prod['PT-COP-12']->id, 'cantidad' => 45],
-            ], $u['auxbodega']);
+                ['producto_id' => $prod['INS-ACE-HID']->id, 'cantidad' => 20, 'costo_unitario' => 122],
+            ], $u['amantto']);
+        $inv->registrar(['tipo' => 'ajuste_salida', 'fecha' => today()->subDay(),
+            'notas' => 'Cubeta de aceite contaminada con agua'], [
+                ['producto_id' => $prod['INS-ACE-HID']->id, 'cantidad' => 5],
+            ], $u['amantto']);
 
         // ── Órdenes de trabajo (hoja "Data" del libro de tareas) ────────────
         $ots = app(OrdenTrabajoService::class);

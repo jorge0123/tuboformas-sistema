@@ -44,7 +44,7 @@ class MaquinaController extends Controller
     public function show(Maquina $maquina)
     {
         $this->authorize('maquinas.ver');
-        $maquina->load(['area', 'componentes', 'partes.producto.existencias', 'archivos.user', 'planes.responsable']);
+        $maquina->load(['area', 'componentes', 'partes.producto', 'archivos.user', 'planes.responsable']);
 
         $ordenes = $maquina->ordenes()->with('responsable')->latest()->limit(50)->get();
         $bitacora = $maquina->bitacoras()->with(['responsable', 'proveedor', 'orden'])->limit(100)->get();

@@ -10,6 +10,11 @@ class MaquinaParte extends Model
 
     protected $casts = ['cantidad' => 'decimal:2'];
 
+    public function maquina()
+    {
+        return $this->belongsTo(Maquina::class);
+    }
+
     public function producto()
     {
         return $this->belongsTo(Producto::class);

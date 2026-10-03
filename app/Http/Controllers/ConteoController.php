@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Auditoria;
-use App\Models\Bodega;
 use App\Models\CategoriaProducto;
 use App\Models\Conteo;
 use App\Models\ConteoLinea;
-use App\Models\Existencia;
 use App\Models\Producto;
 use App\Models\User;
 use App\Notifications\Aviso;
@@ -19,7 +17,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 
 /**
- * Conteo físico: se abre por bodega (toma la existencia del sistema en ese momento),
+ * Conteo físico de la bodega de repuestos: toma la existencia del sistema al abrirse,
  * se captura lo contado y al aplicar las diferencias se vuelven ajustes aprobados.
  */
 class ConteoController extends Controller
@@ -27,7 +25,7 @@ class ConteoController extends Controller
     public function index()
     {
         $this->authorize('conteos.ver');
-        $conteos = Conteo::with(['bodega', 'user'])->withCount([
+        $conteos = Conteo::with('user')->withCount([
             'lineas',
             'lineas as contadas' => fn ($q) => $q->whereNotNull('cantidad_contada'),
         ])->latest()->paginate(25);
@@ -40,7 +38,6 @@ class ConteoController extends Controller
         $this->authorize('conteos.gestionar');
 
         return view('conteos.create', [
-            'bodegas' => Bodega::where('activo', true)->get(),
             'categorias' => CategoriaProducto::where('activo', true)->orderBy('nombre')->get(),
         ]);
     }
@@ -49,45 +46,43 @@ class ConteoController extends Controller
     {
         $this->authorize('conteos.gestionar');
         $d = $request->validate([
-            'bodega_id' => ['required', 'exists:bodegas,id'],
             'tipo' => ['nullable', Rule::in(array_keys(Producto::TIPOS))],
             'categoria_id' => ['nullable', 'exists:categorias_producto,id'],
             'solo_con_existencia' => ['nullable', 'boolean'],
             'notas' => ['nullable', 'string', 'max:1000'],
         ]);
-        if (Conteo::where('bodega_id', $d['bodega_id'])->where('estado', 'abierto')->exists()) {
-            return back()->with('error', 'Ya hay un conteo abierto en esa bodega. Aplícalo o cancélalo primero.');
+        if (Conteo::where('estado', 'abierto')->exists()) {
+            return back()->with('error', 'Ya hay un conteo abierto. Aplícalo o cancélalo primero.');
         }
 
         $conteo = DB::transaction(function () use ($d, $request) {
             $conteo = Conteo::create([
-                'folio' => Folios::siguiente('CNT', 5), 'bodega_id' => $d['bodega_id'], 'fecha' => today(),
+                'folio' => Folios::siguiente('CNT', 5), 'fecha' => today(),
                 'notas' => $d['notas'] ?? null, 'user_id' => $request->user()->id,
             ]);
-            $existencias = Existencia::where('bodega_id', $d['bodega_id'])->pluck('cantidad', 'producto_id');
             Producto::where('activo', true)
                 ->when($d['tipo'] ?? null, fn ($q, $t) => $q->where('tipo', $t))
                 ->when($d['categoria_id'] ?? null, fn ($q, $c) => $q->where('categoria_id', $c))
-                ->when(! empty($d['solo_con_existencia']), fn ($q) => $q->whereIn('id', $existencias->filter(fn ($c) => $c > 0)->keys()))
+                ->when(! empty($d['solo_con_existencia']), fn ($q) => $q->where('existencia', '>', 0))
                 ->orderBy('nombre')->get()
-                ->each(fn ($p) => $conteo->lineas()->create(['producto_id' => $p->id, 'cantidad_sistema' => $existencias[$p->id] ?? 0]));
+                ->each(fn ($p) => $conteo->lineas()->create(['producto_id' => $p->id, 'cantidad_sistema' => $p->existencia]));
 
             return $conteo;
         });
         Auditoria::registrar('crear', $conteo, $conteo->folio);
         Notification::send(
             User::activos()->permission('conteos.registrar')->where('id', '!=', $request->user()->id)->get(),
-            new Aviso('Conteo físico abierto', "{$conteo->folio} · {$conteo->bodega->nombre}: ya pueden empezar a contar.", route('conteos.show', $conteo))
+            new Aviso('Conteo físico abierto', "{$conteo->folio}: ya pueden empezar a contar.", route('conteos.show', $conteo))
         );
 
-        return redirect()->route('conteos.show', $conteo)->with('ok', "Conteo {$conteo->folio} abierto con {$conteo->lineas()->count()} productos.");
+        return redirect()->route('conteos.show', $conteo)->with('ok', "Conteo {$conteo->folio} abierto con {$conteo->lineas()->count()} repuestos.");
     }
 
     public function show(Request $request, Conteo $conteo)
     {
         $this->authorize('conteos.ver');
-        $conteo->load(['bodega', 'user', 'aplicadoPor']);
-        $lineas = $conteo->lineas()->with(['producto.unidad', 'producto.presentaciones'])
+        $conteo->load(['user', 'aplicadoPor']);
+        $lineas = $conteo->lineas()->with('producto.unidad')
             ->when($request->filled('q'), fn ($q) => $q->whereHas('producto', fn ($p) => $p->buscar($request->q)))
             ->when($request->input('ver') === 'pendientes', fn ($q) => $q->whereNull('cantidad_contada'))
             ->when($request->input('ver') === 'diferencias', fn ($q) => $q->whereNotNull('cantidad_contada')->whereColumn('cantidad_contada', '!=', 'cantidad_sistema'))
@@ -129,7 +124,7 @@ class ConteoController extends Controller
 
         $lineas = $conteo->lineas()->whereNotNull('cantidad_contada')->get();
         // Se compara contra la existencia ACTUAL, por si hubo movimientos mientras se contaba.
-        $actual = Existencia::where('bodega_id', $conteo->bodega_id)->pluck('cantidad', 'producto_id');
+        $actual = Producto::whereIn('id', $lineas->pluck('producto_id'))->pluck('existencia', 'id');
         $entradas = [];
         $salidas = [];
         foreach ($lineas as $l) {
@@ -146,10 +141,10 @@ class ConteoController extends Controller
             $u = $request->user();
             $nota = "Ajuste por conteo físico {$conteo->folio}";
             if ($salidas) {
-                $this->ajuste($inv, 'ajuste_salida', ['bodega_origen_id' => $conteo->bodega_id], $salidas, $u, $nota);
+                $this->ajuste($inv, 'ajuste_salida', $salidas, $u, $nota);
             }
             if ($entradas) {
-                $this->ajuste($inv, 'ajuste_entrada', ['bodega_destino_id' => $conteo->bodega_id], $entradas, $u, $nota);
+                $this->ajuste($inv, 'ajuste_entrada', $entradas, $u, $nota);
             }
             $conteo->update(['estado' => 'aplicado', 'aplicado_por' => $u->id, 'aplicado_at' => now()]);
         });
@@ -158,10 +153,10 @@ class ConteoController extends Controller
         Notification::send(
             User::whereIn('id', $conteo->lineas()->whereNotNull('contado_por')->distinct()->pluck('contado_por'))
                 ->where('id', '!=', $request->user()->id)->activos()->get(),
-            new Aviso('Conteo aplicado', "{$conteo->folio}: ".(count($entradas) + count($salidas)).' productos ajustados.', route('conteos.show', $conteo))
+            new Aviso('Conteo aplicado', "{$conteo->folio}: ".(count($entradas) + count($salidas)).' repuestos ajustados.', route('conteos.show', $conteo))
         );
 
-        return back()->with('ok', 'Conteo aplicado. '.(count($entradas) + count($salidas)).' productos ajustados.');
+        return back()->with('ok', 'Conteo aplicado. '.(count($entradas) + count($salidas)).' repuestos ajustados.');
     }
 
     public function cancelar(Conteo $conteo)
@@ -174,9 +169,9 @@ class ConteoController extends Controller
         return back()->with('ok', 'Conteo cancelado. No se modificó la existencia.');
     }
 
-    private function ajuste(InventarioService $inv, string $tipo, array $bodega, array $lineas, $u, string $nota): void
+    private function ajuste(InventarioService $inv, string $tipo, array $lineas, $u, string $nota): void
     {
-        $mov = $inv->registrar(['tipo' => $tipo, 'fecha' => today(), 'notas' => $nota, 'referencia' => $nota] + $bodega, $lineas, $u);
+        $mov = $inv->registrar(['tipo' => $tipo, 'fecha' => today(), 'notas' => $nota, 'referencia' => $nota], $lineas, $u);
         if ($mov->estado === 'pendiente') {
             $inv->aprobar($mov, $u);
         }

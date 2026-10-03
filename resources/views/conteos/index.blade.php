@@ -5,16 +5,16 @@
 </div>
 <div class="tarjeta overflow-hidden">
     @if ($conteos->isEmpty())
-        <x-vacio icono="conteo" titulo="Sin conteos" texto="Abre un conteo por bodega para verificar la existencia." />
+        <x-vacio icono="conteo" titulo="Sin conteos" texto="Abre un conteo para verificar la existencia de los repuestos." />
     @else
     <table class="tabla">
-        <thead><tr><th>Conteo</th><th>Bodega</th><th>Fecha</th><th class="w-48">Avance</th><th>Abrió</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Conteo</th><th>Notas</th><th>Fecha</th><th class="w-48">Avance</th><th>Abrió</th><th>Estado</th></tr></thead>
         <tbody class="divide-y divide-carbon-50">
         @foreach ($conteos as $c)
             @php $pct = $c->lineas_count ? round($c->contadas / $c->lineas_count * 100) : 0; @endphp
             <tr class="cursor-pointer" onclick="location='{{ route('conteos.show', $c) }}'">
                 <td class="font-mono font-semibold">{{ $c->folio }}</td>
-                <td>{{ $c->bodega->nombre }}</td>
+                <td class="max-w-xs truncate text-carbon-500">{{ $c->notas ?? '—' }}</td>
                 <td class="tabular-nums">@fecha($c->fecha)</td>
                 <td><div class="flex items-center gap-2"><div class="barra flex-1"><span style="width: {{ $pct }}%"></span></div><span class="text-xs font-semibold tabular-nums">{{ $c->contadas }}/{{ $c->lineas_count }}</span></div></td>
                 <td>{{ $c->user->name }}</td>

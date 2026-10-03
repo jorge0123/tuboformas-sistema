@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Area;
 use App\Models\Bitacora;
-use App\Models\Bodega;
 use App\Models\CategoriaProducto;
 use App\Models\Especialidad;
 use App\Models\Herramienta;
@@ -20,12 +19,12 @@ use Illuminate\Database\Seeder;
 
 /**
  * Más datos de ejemplo sobre DemoSeeder para ver el sistema "lleno": máquinas nuevas y fichas
- * técnicas con repuestos, catálogo completo de accesorios PVC con variantes de color, proveedores,
- * meses de movimientos de bodega, OT en todos los estados, bitácora histórica, planes y herramientas.
+ * técnicas con repuestos, bodega de repuestos completa, proveedores, meses de movimientos de
+ * repuestos, OT en todos los estados, bitácora histórica, planes y herramientas.
  *
  *   php artisan db:seed --class=DemoAmpliadoSeeder
  *
- * Se puede correr una sola vez (si ya existe PT-COP-34-NA no hace nada).
+ * Se puede correr una sola vez (si ya existe REP-ROD-6205 no hace nada).
  */
 class DemoAmpliadoSeeder extends Seeder
 {
@@ -42,7 +41,7 @@ class DemoAmpliadoSeeder extends Seeder
         if (! Maquina::exists()) {
             $this->call(DemoSeeder::class);
         }
-        if (Producto::where('codigo', 'PT-COP-34-NA')->exists()) {
+        if (Producto::where('codigo', 'REP-ROD-6205')->exists()) {
             $this->command?->info('DemoAmpliadoSeeder ya se había cargado.');
 
             return;
@@ -66,16 +65,6 @@ class DemoAmpliadoSeeder extends Seeder
         return Especialidad::where('nombre', $n)->value('id');
     }
 
-    private function bod(string $c): int
-    {
-        return Bodega::where('codigo', $c)->value('id');
-    }
-
-    private function pres(string $cod, string $nombre): ?int
-    {
-        return $this->prod[$cod]->presentaciones()->where('nombre', $nombre)->value('id');
-    }
-
     // ── Máquinas nuevas ─────────────────────────────────────────────────
     private function maquinas(): void
     {
@@ -97,7 +86,7 @@ class DemoAmpliadoSeeder extends Seeder
         $this->maq = Maquina::all()->keyBy('codigo')->all();
     }
 
-    // ── Catálogo de productos ───────────────────────────────────────────
+    // ── Catálogo de repuestos ───────────────────────────────────────────
     private function productos(): void
     {
         foreach (['Rodamientos y transmisión', 'Sensores y control', 'Seguridad industrial'] as $c) {
@@ -106,89 +95,56 @@ class DemoAmpliadoSeeder extends Seeder
         $cat = fn (string $n) => CategoriaProducto::where('nombre', $n)->value('id');
         $uni = fn (string $n) => Unidad::where('nombre', $n)->value('id');
 
-        // Los que ya existen (DemoSeeder) son grises; se agregan las variantes naranja.
-        Producto::where('tipo', 'producto_terminado')->whereNull('color')->update(['color' => 'Gris']);
-
         $filas = [
             // Materia prima
-            ['MP-TUB-114', 'Tubo PVC eléctrico 1 1/4" x 10 ft', 'materia_prima', 'Tubería PVC', '1 1/4"', null, 'Tubo', 60, [['Manojo', 20]]],
-            ['MP-TUB-112', 'Tubo PVC eléctrico 1 1/2" x 10 ft', 'materia_prima', 'Tubería PVC', '1 1/2"', null, 'Tubo', 60, [['Manojo', 16]]],
-            ['MP-TUB-2', 'Tubo PVC eléctrico 2" x 10 ft', 'materia_prima', 'Tubería PVC', '2"', null, 'Tubo', 40, [['Manojo', 12]]],
-            ['MP-RES-NA', 'Compuesto de PVC naranja', 'materia_prima', 'Resina y aditivos', null, 'Naranja', 'Kilogramo', 400, [['Saco 25 kg', 25]]],
-            ['MP-ESTAB', 'Estabilizante térmico calcio-zinc', 'materia_prima', 'Resina y aditivos', null, null, 'Kilogramo', 100, [['Saco 20 kg', 20]]],
-            ['MP-PIG-NA', 'Pigmento concentrado naranja', 'materia_prima', 'Resina y aditivos', null, 'Naranja', 'Kilogramo', 25, [['Cubeta 10 kg', 10]]],
-            ['MP-BOLSA', 'Bolsa plástica de empaque 12x18"', 'materia_prima', 'Empaque', null, null, 'Unidad', 2000, [['Paquete x 500', 500]]],
-            ['MP-CAJA-CART', 'Caja de cartón corrugado 40x30x30', 'materia_prima', 'Empaque', null, null, 'Unidad', 300, [['Fardo x 25', 25]]],
             // Producto terminado: variantes naranja de los que ya existen
-            ['PT-COP-12-NA', 'Copla PVC 1/2"', 'producto_terminado', 'Coplas', '1/2"', 'Naranja', 'Pieza', 2000, [['Bolsa x 300', 300], ['Caja x 1200', 1200]]],
-            ['PT-COP-34-NA', 'Copla PVC 3/4"', 'producto_terminado', 'Coplas', '3/4"', 'Naranja', 'Pieza', 2000, [['Bolsa x 300', 300], ['Caja x 1200', 1200]]],
-            ['PT-COD-12-NA', 'Codo / vuelta PVC 1/2"', 'producto_terminado', 'Codos / vueltas', '1/2"', 'Naranja', 'Pieza', 1500, [['Bolsa x 100', 100]]],
-            ['PT-COD-34-NA', 'Codo / vuelta PVC 3/4"', 'producto_terminado', 'Codos / vueltas', '3/4"', 'Naranja', 'Pieza', 1500, [['Bolsa x 100', 100]]],
             // Producto terminado nuevo
-            ['PT-COP-114', 'Copla PVC 1 1/4"', 'producto_terminado', 'Coplas', '1 1/4"', 'Gris', 'Pieza', 800, [['Bolsa x 100', 100]]],
-            ['PT-COD-1', 'Codo / vuelta PVC 1"', 'producto_terminado', 'Codos / vueltas', '1"', 'Gris', 'Pieza', 1000, [['Bolsa x 50', 50]]],
-            ['PT-CUR-12', 'Curva PVC 90° 1/2"', 'producto_terminado', 'Codos / vueltas', '1/2"', 'Gris', 'Pieza', 1500, [['Bolsa x 100', 100]]],
-            ['PT-CUR-34', 'Curva PVC 90° 3/4"', 'producto_terminado', 'Codos / vueltas', '3/4"', 'Gris', 'Pieza', 1500, [['Bolsa x 100', 100]]],
-            ['PT-CUR-34-NA', 'Curva PVC 90° 3/4"', 'producto_terminado', 'Codos / vueltas', '3/4"', 'Naranja', 'Pieza', 1000, [['Bolsa x 100', 100]]],
-            ['PT-ADM-12', 'Adaptador macho PVC 1/2"', 'producto_terminado', 'Conectores', '1/2"', 'Gris', 'Pieza', 2000, [['Bolsa x 200', 200]]],
-            ['PT-ADM-34', 'Adaptador macho PVC 3/4"', 'producto_terminado', 'Conectores', '3/4"', 'Gris', 'Pieza', 2000, [['Bolsa x 200', 200]]],
-            ['PT-ADH-12', 'Adaptador hembra PVC 1/2"', 'producto_terminado', 'Conectores', '1/2"', 'Gris', 'Pieza', 1500, [['Bolsa x 200', 200]]],
-            ['PT-CON-12', 'Conector recto PVC 1/2"', 'producto_terminado', 'Conectores', '1/2"', 'Gris', 'Pieza', 2500, [['Bolsa x 300', 300]]],
-            ['PT-CON-34', 'Conector recto PVC 3/4"', 'producto_terminado', 'Conectores', '3/4"', 'Gris', 'Pieza', 2500, [['Bolsa x 300', 300]]],
-            ['PT-CON-34-NA', 'Conector recto PVC 3/4"', 'producto_terminado', 'Conectores', '3/4"', 'Naranja', 'Pieza', 1500, [['Bolsa x 300', 300]]],
-            ['PT-CAJ-RECT', 'Caja rectangular PVC 2x4"', 'producto_terminado', 'Cajas', null, 'Gris', 'Pieza', 1000, [['Fardo x 50', 50]]],
-            ['PT-CAJ-RECT-NA', 'Caja rectangular PVC 2x4"', 'producto_terminado', 'Cajas', null, 'Naranja', 'Pieza', 600, [['Fardo x 50', 50]]],
-            ['PT-CAJ-OCT', 'Caja octagonal PVC 4"', 'producto_terminado', 'Cajas', null, 'Gris', 'Pieza', 800, [['Fardo x 40', 40]]],
-            ['PT-CAJ-CUAD', 'Caja cuadrada PVC 4x4"', 'producto_terminado', 'Cajas', null, 'Gris', 'Pieza', 600, [['Fardo x 40', 40]]],
             // Repuestos
-            ['REP-ROD-6205', 'Rodamiento 6205-2RS', 'repuesto', 'Rodamientos y transmisión', null, null, 'Unidad', 4, []],
-            ['REP-ROD-6304', 'Rodamiento 6304-ZZ', 'repuesto', 'Rodamientos y transmisión', null, null, 'Unidad', 2, []],
-            ['REP-ROD-22212', 'Rodamiento de rodillos 22212 E', 'repuesto', 'Rodamientos y transmisión', null, null, 'Unidad', 1, []],
-            ['REP-BANDA-A38', 'Banda en V A-38', 'repuesto', 'Rodamientos y transmisión', null, null, 'Unidad', 4, []],
-            ['REP-BANDA-B52', 'Banda en V B-52', 'repuesto', 'Rodamientos y transmisión', null, null, 'Unidad', 3, []],
-            ['REP-CAD-40', 'Cadena de rodillos ANSI 40 (tramo 3 m)', 'repuesto', 'Rodamientos y transmisión', null, null, 'Unidad', 1, []],
-            ['REP-RES-500', 'Resistencia de banda 220V 500W ø60x50mm', 'repuesto', 'Repuestos eléctricos', null, null, 'Unidad', 4, []],
-            ['REP-RES-EXT', 'Resistencia cerámica extrusora 220V 1500W', 'repuesto', 'Repuestos eléctricos', null, null, 'Unidad', 3, []],
-            ['REP-TERMO-K', 'Termocupla tipo K con bayoneta', 'repuesto', 'Sensores y control', null, null, 'Unidad', 4, []],
-            ['REP-SEN-IND', 'Sensor inductivo M18 PNP NA', 'repuesto', 'Sensores y control', null, null, 'Unidad', 2, []],
-            ['REP-SEN-FOTO', 'Sensor fotoeléctrico difuso 24V', 'repuesto', 'Sensores y control', null, null, 'Unidad', 2, []],
-            ['REP-PID', 'Controlador de temperatura PID 48x48', 'repuesto', 'Sensores y control', null, null, 'Unidad', 1, []],
-            ['REP-CONT-25', 'Contactor 3P 25A bobina 220V', 'repuesto', 'Repuestos eléctricos', null, null, 'Unidad', 2, []],
-            ['REP-BRK-2X30', 'Breaker termomagnético 2x30A', 'repuesto', 'Repuestos eléctricos', null, null, 'Unidad', 2, []],
-            ['REP-FUS-15', 'Fusible cilíndrico 10x38 15A', 'repuesto', 'Repuestos eléctricos', null, null, 'Unidad', 10, [['Caja x 10', 10]]],
-            ['REP-CAP-ARR', 'Capacitor de arranque 189-227 µF 250V', 'repuesto', 'Repuestos eléctricos', null, null, 'Unidad', 2, []],
-            ['REP-SELLO-34', 'Sello mecánico 3/4" para bomba', 'repuesto', 'Repuestos mecánicos', null, null, 'Unidad', 1, []],
-            ['REP-CUCH-CT', 'Cuchilla para cortador de tubo PVC', 'repuesto', 'Repuestos mecánicos', null, null, 'Unidad', 2, []],
-            ['REP-CUCH-MOL', 'Juego de cuchillas para molino', 'repuesto', 'Repuestos mecánicos', null, null, 'Unidad', 1, []],
-            ['REP-BOQ-INY', 'Boquilla de inyección 3 mm', 'repuesto', 'Repuestos mecánicos', null, null, 'Unidad', 2, []],
-            ['REP-FILT-AIRE', 'Filtro de aire compresor de tornillo', 'repuesto', 'Repuestos hidráulicos', null, null, 'Unidad', 2, []],
-            ['REP-FILT-ACE', 'Filtro de aceite compresor de tornillo', 'repuesto', 'Repuestos hidráulicos', null, null, 'Unidad', 2, []],
-            ['REP-SEP-ACE', 'Separador aire-aceite compresor', 'repuesto', 'Repuestos hidráulicos', null, null, 'Unidad', 1, []],
-            ['REP-FILT-DSL', 'Filtro de combustible planta eléctrica', 'repuesto', 'Repuestos hidráulicos', null, null, 'Unidad', 2, []],
-            ['REP-MANG-12', 'Manguera hidráulica 1/2" 2 hilos (m)', 'repuesto', 'Repuestos hidráulicos', null, null, 'Metro', 5, []],
+            ['REP-ROD-6205', 'Rodamiento 6205-2RS', 'repuesto', 'Rodamientos y transmisión', null, 'Unidad', 4],
+            ['REP-ROD-6304', 'Rodamiento 6304-ZZ', 'repuesto', 'Rodamientos y transmisión', null, 'Unidad', 2],
+            ['REP-ROD-22212', 'Rodamiento de rodillos 22212 E', 'repuesto', 'Rodamientos y transmisión', null, 'Unidad', 1],
+            ['REP-BANDA-A38', 'Banda en V A-38', 'repuesto', 'Rodamientos y transmisión', null, 'Unidad', 4],
+            ['REP-BANDA-B52', 'Banda en V B-52', 'repuesto', 'Rodamientos y transmisión', null, 'Unidad', 3],
+            ['REP-CAD-40', 'Cadena de rodillos ANSI 40 (tramo 3 m)', 'repuesto', 'Rodamientos y transmisión', null, 'Unidad', 1],
+            ['REP-RES-500', 'Resistencia de banda 220V 500W ø60x50mm', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 4],
+            ['REP-RES-EXT', 'Resistencia cerámica extrusora 220V 1500W', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 3],
+            ['REP-TERMO-K', 'Termocupla tipo K con bayoneta', 'repuesto', 'Sensores y control', null, 'Unidad', 4],
+            ['REP-SEN-IND', 'Sensor inductivo M18 PNP NA', 'repuesto', 'Sensores y control', null, 'Unidad', 2],
+            ['REP-SEN-FOTO', 'Sensor fotoeléctrico difuso 24V', 'repuesto', 'Sensores y control', null, 'Unidad', 2],
+            ['REP-PID', 'Controlador de temperatura PID 48x48', 'repuesto', 'Sensores y control', null, 'Unidad', 1],
+            ['REP-CONT-25', 'Contactor 3P 25A bobina 220V', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 2],
+            ['REP-BRK-2X30', 'Breaker termomagnético 2x30A', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 2],
+            ['REP-FUS-15', 'Fusible cilíndrico 10x38 15A', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 10],
+            ['REP-CAP-ARR', 'Capacitor de arranque 189-227 µF 250V', 'repuesto', 'Repuestos eléctricos', null, 'Unidad', 2],
+            ['REP-SELLO-34', 'Sello mecánico 3/4" para bomba', 'repuesto', 'Repuestos mecánicos', null, 'Unidad', 1],
+            ['REP-CUCH-CT', 'Cuchilla para cortador de tubo PVC', 'repuesto', 'Repuestos mecánicos', null, 'Unidad', 2],
+            ['REP-CUCH-MOL', 'Juego de cuchillas para molino', 'repuesto', 'Repuestos mecánicos', null, 'Unidad', 1],
+            ['REP-BOQ-INY', 'Boquilla de inyección 3 mm', 'repuesto', 'Repuestos mecánicos', null, 'Unidad', 2],
+            ['REP-FILT-AIRE', 'Filtro de aire compresor de tornillo', 'repuesto', 'Repuestos hidráulicos', null, 'Unidad', 2],
+            ['REP-FILT-ACE', 'Filtro de aceite compresor de tornillo', 'repuesto', 'Repuestos hidráulicos', null, 'Unidad', 2],
+            ['REP-SEP-ACE', 'Separador aire-aceite compresor', 'repuesto', 'Repuestos hidráulicos', null, 'Unidad', 1],
+            ['REP-FILT-DSL', 'Filtro de combustible planta eléctrica', 'repuesto', 'Repuestos hidráulicos', null, 'Unidad', 2],
+            ['REP-MANG-12', 'Manguera hidráulica 1/2" 2 hilos (m)', 'repuesto', 'Repuestos hidráulicos', null, 'Metro', 5],
             // Insumos
-            ['INS-ACE-46', 'Aceite hidráulico ISO 46', 'insumo', 'Lubricantes', null, null, 'Galón', 10, [['Cubeta 5 gal', 5]]],
-            ['INS-ACE-COMP', 'Aceite para compresor sintético', 'insumo', 'Lubricantes', null, null, 'Galón', 4, [['Cubeta 5 gal', 5]]],
-            ['INS-GRASA', 'Grasa multiuso EP2', 'insumo', 'Lubricantes', null, null, 'Libra', 20, [['Cubeta 35 lb', 35]]],
-            ['INS-WD40', 'Lubricante penetrante en aerosol', 'insumo', 'Consumibles', null, null, 'Unidad', 6, []],
-            ['INS-CEMENTO', 'Cemento solvente para PVC', 'insumo', 'Consumibles', null, null, 'Litro', 4, []],
-            ['INS-THINNER', 'Thinner', 'insumo', 'Consumibles', null, null, 'Galón', 3, []],
-            ['INS-TRAPO', 'Trapo industrial', 'insumo', 'Consumibles', null, null, 'Libra', 20, []],
-            ['INS-ELEC-6013', 'Electrodo 6013 1/8"', 'insumo', 'Consumibles', null, null, 'Libra', 10, []],
-            ['INS-DISCO', 'Disco de corte metal 4 1/2"', 'insumo', 'Consumibles', null, null, 'Unidad', 20, []],
-            ['INS-GUANTE', 'Guantes de nitrilo', 'insumo', 'Seguridad industrial', null, null, 'Caja', 3, []],
-            ['INS-LENTES', 'Lentes de seguridad claros', 'insumo', 'Seguridad industrial', null, null, 'Unidad', 10, []],
-            ['INS-TAPON', 'Tapones auditivos desechables', 'insumo', 'Seguridad industrial', null, null, 'Unidad', 100, [['Caja x 200', 200]]],
+            ['INS-ACE-46', 'Aceite hidráulico ISO 46', 'insumo', 'Lubricantes', null, 'Galón', 10],
+            ['INS-ACE-COMP', 'Aceite para compresor sintético', 'insumo', 'Lubricantes', null, 'Galón', 4],
+            ['INS-GRASA', 'Grasa multiuso EP2', 'insumo', 'Lubricantes', null, 'Libra', 20],
+            ['INS-WD40', 'Lubricante penetrante en aerosol', 'insumo', 'Consumibles', null, 'Unidad', 6],
+            ['INS-CEMENTO', 'Cemento solvente para PVC', 'insumo', 'Consumibles', null, 'Litro', 4],
+            ['INS-THINNER', 'Thinner', 'insumo', 'Consumibles', null, 'Galón', 3],
+            ['INS-TRAPO', 'Trapo industrial', 'insumo', 'Consumibles', null, 'Libra', 20],
+            ['INS-ELEC-6013', 'Electrodo 6013 1/8"', 'insumo', 'Consumibles', null, 'Libra', 10],
+            ['INS-DISCO', 'Disco de corte metal 4 1/2"', 'insumo', 'Consumibles', null, 'Unidad', 20],
+            ['INS-GUANTE', 'Guantes de nitrilo', 'insumo', 'Seguridad industrial', null, 'Caja', 3],
+            ['INS-LENTES', 'Lentes de seguridad claros', 'insumo', 'Seguridad industrial', null, 'Unidad', 10],
+            ['INS-TAPON', 'Tapones auditivos desechables', 'insumo', 'Seguridad industrial', null, 'Unidad', 100],
         ];
-        foreach ($filas as [$cod, $nom, $tipo, $c, $med, $color, $unidad, $min, $pres]) {
+        foreach ($filas as [$cod, $nom, $tipo, $c, $med, $unidad, $min]) {
             $this->prod[$cod] = Producto::create([
-                'codigo' => $cod, 'nombre' => $nom, 'tipo' => $tipo, 'categoria_id' => $cat($c), 'medida' => $med, 'color' => $color,
+                'codigo' => $cod, 'nombre' => $nom, 'tipo' => $tipo, 'categoria_id' => $cat($c), 'medida' => $med,
                 'unidad_id' => $uni($unidad), 'stock_minimo' => $min,
-                'ubicacion' => ['materia_prima' => 'Patio MP', 'producto_terminado' => 'Rack PT-'.chr(65 + crc32($cod) % 6), 'repuesto' => 'Estante R-'.(crc32($cod) % 9 + 1), 'insumo' => 'Estante I-'.(crc32($cod) % 4 + 1)][$tipo],
+                'ubicacion' => ['repuesto' => 'Estante R-'.(crc32($cod) % 9 + 1), 'insumo' => 'Estante I-'.(crc32($cod) % 4 + 1)][$tipo],
             ]);
-            foreach ($pres as [$pn, $f]) {
-                $this->prod[$cod]->presentaciones()->create(['nombre' => $pn, 'factor' => $f]);
-            }
         }
         // Los de DemoSeeder también, para usarlos en movimientos.
         foreach (Producto::whereNotIn('codigo', array_keys($this->prod))->get() as $p) {
@@ -204,10 +160,6 @@ class DemoAmpliadoSeeder extends Seeder
                 [['REP-ROD-6205', 'SKF-6205-2RS', 48, 1], ['REP-ROD-6304', 'SKF-6304-ZZ', 55, 1], ['REP-ROD-22212', 'SKF-22212E', 1250, 10], ['REP-BANDA-A38', 'GATES-A38', 62, 2], ['REP-BANDA-B52', 'GATES-B52', 95, 2], ['REP-CAD-40', 'ANSI40-3M', 310, 5]]],
             ['Electro Industrial Centroamericana', '7788120-K', 'Sandra Pineda', '2360-8899', 'cotizaciones@eicsa.com.gt', '5a. avenida 10-15 zona 9', ['repuestos'],
                 [['REP-CONT-25', 'LC1D25M7', 385, 3], ['REP-BRK-2X30', 'EZ9-2P30', 140, 1], ['REP-FUS-15', 'FUS1038-15', 12, 1], ['REP-TERMO-K', 'TK-BAY-6', 175, 4], ['REP-SEN-IND', 'IME18-08', 420, 7], ['REP-SEN-FOTO', 'WL100-2', 560, 7], ['REP-PID', 'E5CC-RX2', 1150, 10], ['REP-RES-500', 'RB60-500', 210, 8], ['REP-RES-EXT', 'RC-1500', 640, 12]]],
-            ['Polímeros de Centroamérica', '3301456-9', 'Mario Tobar', '2438-5500', 'pedidos@polica.com', 'Km 17.5 carretera al Pacífico', ['materia_prima'],
-                [['MP-RES-NA', 'PVC-C-NA', 13.8, 5], ['MP-ESTAB', 'CZ-44', 29, 7], ['MP-PIG-NA', 'MB-OR-12', 64, 7], ['MP-TUB-114', null, 26.5, 3], ['MP-TUB-112', null, 31, 3], ['MP-TUB-2', null, 44, 3]]],
-            ['Empaques del Sur', '9901233-4', 'Karla Méndez', '7760-4411', 'ventas@empaquesdelsur.gt', 'Escuintla', ['materia_prima', 'insumos'],
-                [['MP-BOLSA', 'B1218', 0.45, 2], ['MP-CAJA-CART', 'CC403030', 7.5, 4]]],
             ['Lubricantes y Filtros Express', '6612099-1', 'Óscar Leiva', '2485-2200', 'oscar@lubrifiltros.gt', 'Villa Nueva', ['insumos', 'repuestos'],
                 [['INS-ACE-46', 'ISO46-5G', 520, 1], ['INS-ACE-COMP', 'SYN-COMP', 890, 3], ['INS-GRASA', 'EP2-35', 690, 1], ['REP-FILT-AIRE', 'IR-39903265', 480, 5], ['REP-FILT-ACE', 'IR-39911631', 365, 5], ['REP-SEP-ACE', 'IR-54625097', 1850, 12], ['REP-FILT-DSL', 'FF5052', 150, 2]]],
             ['Ferretería El Tornillo Industrial', '1209987-6', 'Luis Castro', '2230-7788', 'mostrador@eltornillo.gt', '18 calle 5-30 zona 1', ['insumos', 'repuestos'],
@@ -294,96 +246,44 @@ class DemoAmpliadoSeeder extends Seeder
         }
     }
 
-    // ── Movimientos de bodega (≈ 2 meses) ───────────────────────────────
+    // ── Movimientos de repuestos (≈ 2 meses) ────────────────────────────
     private function movimientos(): void
     {
         $inv = app(InventarioService::class);
         $u = $this->u;
         $prov = fn (string $n) => $this->prov[$n]->id;
-        $linea = fn (string $cod, float $cant, ?string $pres = null, ?float $costo = null) => array_filter([
-            'producto_id' => $this->prod[$cod]->id, 'presentacion_id' => $pres ? $this->pres($cod, $pres) : null,
-            'cantidad' => $cant, 'costo_unitario' => $costo,
+        $linea = fn (string $cod, float $cant, ?float $costo = null) => array_filter([
+            'producto_id' => $this->prod[$cod]->id, 'cantidad' => $cant, 'costo_unitario' => $costo,
         ], fn ($v) => $v !== null);
 
         // Compras
-        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(58), 'bodega_destino_id' => $this->bod('MP'), 'proveedor_id' => $prov('Polímeros de Centroamérica'), 'documento' => 'FAC-A-88213'], [
-            $linea('MP-RES-NA', 60, 'Saco 25 kg', 345), $linea('MP-ESTAB', 15, 'Saco 20 kg', 580), $linea('MP-PIG-NA', 6, 'Cubeta 10 kg', 640),
-            $linea('MP-TUB-114', 20, 'Manojo', 530), $linea('MP-TUB-112', 15, 'Manojo', 496), $linea('MP-TUB-2', 10, 'Manojo', 528),
-        ], $u['abodega']);
-        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(55), 'bodega_destino_id' => $this->bod('MP'), 'proveedor_id' => $prov('Empaques del Sur'), 'documento' => 'FAC-3321'], [
-            $linea('MP-BOLSA', 20, 'Paquete x 500', 225), $linea('MP-CAJA-CART', 16, 'Fardo x 25', 187.5),
-        ], $u['abodega']);
-        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(52), 'bodega_destino_id' => $this->bod('REP'), 'proveedor_id' => $prov('Rodamientos y Bandas de Guatemala'), 'documento' => 'FAC-B-1182'], [
-            $linea('REP-ROD-6205', 10, null, 48), $linea('REP-ROD-6304', 6, null, 55), $linea('REP-ROD-22212', 2, null, 1250),
-            $linea('REP-BANDA-A38', 8, null, 62), $linea('REP-BANDA-B52', 6, null, 95), $linea('REP-CAD-40', 2, null, 310),
-        ], $u['abodega']);
-        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(50), 'bodega_destino_id' => $this->bod('REP'), 'proveedor_id' => $prov('Electro Industrial Centroamericana'), 'documento' => 'FAC-EIC-5540'], [
-            $linea('REP-CONT-25', 4, null, 385), $linea('REP-BRK-2X30', 4, null, 140), $linea('REP-FUS-15', 3, 'Caja x 10', 120),
-            $linea('REP-TERMO-K', 10, null, 175), $linea('REP-SEN-IND', 3, null, 420), $linea('REP-SEN-FOTO', 3, null, 560),
-            $linea('REP-PID', 2, null, 1150), $linea('REP-RES-500', 12, null, 210), $linea('REP-RES-EXT', 6, null, 640),
-        ], $u['abodega']);
-        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(47), 'bodega_destino_id' => $this->bod('REP'), 'proveedor_id' => $prov('Lubricantes y Filtros Express'), 'documento' => 'FAC-LF-0932'], [
-            $linea('INS-ACE-46', 4, 'Cubeta 5 gal', 2600), $linea('INS-ACE-COMP', 2, 'Cubeta 5 gal', 4450), $linea('INS-GRASA', 2, 'Cubeta 35 lb', 690),
-            $linea('REP-FILT-AIRE', 3, null, 480), $linea('REP-FILT-ACE', 3, null, 365), $linea('REP-SEP-ACE', 1, null, 1850), $linea('REP-FILT-DSL', 4, null, 150),
-        ], $u['abodega']);
-        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(45), 'bodega_destino_id' => $this->bod('REP'), 'proveedor_id' => $prov('Ferretería El Tornillo Industrial'), 'documento' => 'TICKET-77120'], [
-            $linea('INS-WD40', 12, null, 48), $linea('INS-CEMENTO', 8, null, 95), $linea('INS-THINNER', 5, null, 85), $linea('INS-TRAPO', 40, null, 12),
-            $linea('INS-ELEC-6013', 20, null, 22), $linea('INS-DISCO', 40, null, 14), $linea('INS-GUANTE', 6, null, 115), $linea('INS-LENTES', 24, null, 18),
-            $linea('INS-TAPON', 2, 'Caja x 200', 240), $linea('REP-SELLO-34', 2, null, 210), $linea('REP-CAP-ARR', 3, null, 145), $linea('REP-MANG-12', 20, null, 68),
-        ], $u['gbodega']);
-        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(40), 'bodega_destino_id' => $this->bod('REP'), 'proveedor_id' => $prov('Taller Mecánico Precisión'), 'documento' => 'FAC-TMP-221'], [
-            $linea('REP-CUCH-CT', 4, null, 350), $linea('REP-CUCH-MOL', 1, null, 2400), $linea('REP-BOQ-INY', 3, null, 480),
-        ], $u['abodega']);
-        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(21), 'bodega_destino_id' => $this->bod('MP'), 'proveedor_id' => $prov('Polímeros de Centroamérica'), 'documento' => 'FAC-A-88941'], [
-            $linea('MP-RES-NA', 40, 'Saco 25 kg', 352), $linea('MP-TUB-114', 10, 'Manojo', 535),
-        ], $u['abodega']);
+        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(52), 'proveedor_id' => $prov('Rodamientos y Bandas de Guatemala'), 'documento' => 'FAC-B-1182'], [
+            $linea('REP-ROD-6205', 10, 48), $linea('REP-ROD-6304', 6, 55), $linea('REP-ROD-22212', 2, 1250),
+            $linea('REP-BANDA-A38', 8, 62), $linea('REP-BANDA-B52', 6, 95), $linea('REP-CAD-40', 2, 310),
+        ], $u['amantto']);
+        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(50), 'proveedor_id' => $prov('Electro Industrial Centroamericana'), 'documento' => 'FAC-EIC-5540'], [
+            $linea('REP-CONT-25', 4, 385), $linea('REP-BRK-2X30', 4, 140), $linea('REP-FUS-15', 30, 12),
+            $linea('REP-TERMO-K', 10, 175), $linea('REP-SEN-IND', 3, 420), $linea('REP-SEN-FOTO', 3, 560),
+            $linea('REP-PID', 2, 1150), $linea('REP-RES-500', 12, 210), $linea('REP-RES-EXT', 6, 640),
+        ], $u['amantto']);
+        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(47), 'proveedor_id' => $prov('Lubricantes y Filtros Express'), 'documento' => 'FAC-LF-0932'], [
+            $linea('INS-ACE-46', 20, 520), $linea('INS-ACE-COMP', 10, 890), $linea('INS-GRASA', 70, 19.7),
+            $linea('REP-FILT-AIRE', 3, 480), $linea('REP-FILT-ACE', 3, 365), $linea('REP-SEP-ACE', 1, 1850), $linea('REP-FILT-DSL', 4, 150),
+        ], $u['amantto']);
+        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(45), 'proveedor_id' => $prov('Ferretería El Tornillo Industrial'), 'documento' => 'TICKET-77120'], [
+            $linea('INS-WD40', 12, 48), $linea('INS-CEMENTO', 8, 95), $linea('INS-THINNER', 5, 85), $linea('INS-TRAPO', 40, 12),
+            $linea('INS-ELEC-6013', 20, 22), $linea('INS-DISCO', 40, 14), $linea('INS-GUANTE', 6, 115), $linea('INS-LENTES', 24, 18),
+            $linea('INS-TAPON', 400, 1.2), $linea('REP-SELLO-34', 2, 210), $linea('REP-CAP-ARR', 3, 145), $linea('REP-MANG-12', 20, 68),
+        ], $u['gmantto']);
+        $inv->registrar(['tipo' => 'entrada_compra', 'fecha' => today()->subDays(40), 'proveedor_id' => $prov('Taller Mecánico Precisión'), 'documento' => 'FAC-TMP-221'], [
+            $linea('REP-CUCH-CT', 4, 350), $linea('REP-CUCH-MOL', 1, 2400), $linea('REP-BOQ-INY', 3, 480),
+        ], $u['amantto']);
 
-        // Producción: salidas de material y entradas de producto terminado por semana.
-        $semanas = [
-            [49, 'EXT1', [['MP-RES-NA', 12, 'Saco 25 kg'], ['MP-ESTAB', 3, 'Saco 20 kg'], ['MP-PIG-NA', 1, 'Cubeta 10 kg']],
-                [['PT-COP-34-NA', 22, 'Bolsa x 300'], ['PT-COP-12-NA', 14, 'Bolsa x 300'], ['PT-COD-34-NA', 30, 'Bolsa x 100'], ['PT-CON-34-NA', 10, 'Bolsa x 300']]],
-            [42, 'INY1', [['MP-RES-NA', 8, 'Saco 25 kg'], ['MP-BOLSA', 4, 'Paquete x 500']],
-                [['PT-ADM-12', 18, 'Bolsa x 200'], ['PT-ADM-34', 15, 'Bolsa x 200'], ['PT-ADH-12', 10, 'Bolsa x 200'], ['PT-CAJ-RECT', 40, 'Fardo x 50'], ['PT-CAJ-RECT-NA', 20, 'Fardo x 50']]],
-            [35, 'ENC1', [['MP-TUB-114', 6, 'Manojo'], ['MP-BOLSA', 3, 'Paquete x 500']],
-                [['PT-COP-114', 25, 'Bolsa x 100'], ['PT-CUR-12', 24, 'Bolsa x 100'], ['PT-CUR-34', 30, 'Bolsa x 100'], ['PT-CUR-34-NA', 16, 'Bolsa x 100']]],
-            [28, 'INY2', [['MP-RES-NA', 10, 'Saco 25 kg'], ['MP-CAJA-CART', 3, 'Fardo x 25']],
-                [['PT-CON-12', 12, 'Bolsa x 300'], ['PT-CON-34', 14, 'Bolsa x 300'], ['PT-CAJ-OCT', 30, 'Fardo x 40'], ['PT-CAJ-CUAD', 22, 'Fardo x 40'], ['PT-COD-1', 18, 'Bolsa x 50']]],
-            [14, 'EXT2', [['MP-RES-NA', 15, 'Saco 25 kg'], ['MP-ESTAB', 4, 'Saco 20 kg'], ['MP-PIG-NA', 2, 'Cubeta 10 kg']],
-                [['PT-COP-34-NA', 18, 'Bolsa x 300'], ['PT-COD-12-NA', 25, 'Bolsa x 100'], ['PT-CUR-34-NA', 10, 'Bolsa x 100']]],
-            [6, 'ENC2', [['MP-TUB-112', 5, 'Manojo'], ['MP-TUB-2', 3, 'Manojo']],
-                [['PT-COP-34', 8, 'Bolsa x 300'], ['PT-COP-12', 6, 'Bolsa x 300'], ['PT-COD-34', 10, 'Bolsa x 100']]],
-        ];
-        foreach ($semanas as $i => [$dias, $maq, $salida, $entrada]) {
-            $inv->registrar(['tipo' => 'salida_produccion', 'fecha' => today()->subDays($dias), 'bodega_origen_id' => $this->bod('MP'),
-                'maquina_id' => $this->maq[$maq]->id, 'referencia' => 'Orden de producción OP-'.(2410 + $i)],
-                array_map(fn ($l) => $linea($l[0], $l[1], $l[2]), $salida), $u['auxbodega']);
-            $inv->registrar(['tipo' => 'ingreso_produccion', 'fecha' => today()->subDays($dias - 2), 'bodega_destino_id' => $this->bod('PT'),
-                'referencia' => 'Mesas de conteo · turno '.['A', 'B'][$i % 2]],
-                array_map(fn ($l) => $linea($l[0], $l[1], $l[2]), $entrada), $u['auxbodega']);
-        }
-        // Material que no se usó.
-        $inv->registrar(['tipo' => 'devolucion_produccion', 'fecha' => today()->subDays(26), 'bodega_destino_id' => $this->bod('MP'), 'referencia' => 'Sobrante OP-2413'],
-            [$linea('MP-RES-NA', 2, 'Saco 25 kg')], $u['auxbodega']);
-
-        // Despachos a clientes.
-        foreach ([
-            [38, 'ENV-5602', 'Cliente: Distribuidora Eléctrica Nacional', [['PT-COP-34-NA', 10, 'Bolsa x 300'], ['PT-COD-34-NA', 12, 'Bolsa x 100'], ['PT-CON-34-NA', 4, 'Bolsa x 300']]],
-            [30, 'ENV-5640', 'Cliente: Ferretería La Económica (Xela)', [['PT-ADM-12', 6, 'Bolsa x 200'], ['PT-CAJ-RECT', 15, 'Fardo x 50'], ['PT-CAJ-RECT-NA', 8, 'Fardo x 50']]],
-            [19, 'ENV-5701', 'Cliente: Constructora Los Álamos', [['PT-CUR-34', 12, 'Bolsa x 100'], ['PT-COP-114', 10, 'Bolsa x 100'], ['PT-CAJ-OCT', 12, 'Fardo x 40']]],
-            [9, 'ENV-5760', 'Cliente: Sucursal Zona 18', [['PT-CON-12', 5, 'Bolsa x 300'], ['PT-CON-34', 6, 'Bolsa x 300'], ['PT-COD-1', 8, 'Bolsa x 50']]],
-            [2, 'ENV-5802', 'Cliente: Materiales Eléctricos del Norte', [['PT-COP-34-NA', 12, 'Bolsa x 300'], ['PT-COD-12-NA', 10, 'Bolsa x 100'], ['PT-CAJ-CUAD', 14, 'Fardo x 40']]],
-        ] as [$dias, $doc, $ref, $lineas]) {
-            $inv->registrar(['tipo' => 'salida_despacho', 'fecha' => today()->subDays($dias), 'bodega_origen_id' => $this->bod('PT'), 'documento' => $doc, 'referencia' => $ref],
-                array_map(fn ($l) => $linea($l[0], $l[1], $l[2]), $lineas), $u['abodega']);
-        }
-
-        // Traslado, ajustes (uno aprobado directo, uno pendiente) y bajo mínimo a propósito.
-        $inv->registrar(['tipo' => 'traslado', 'fecha' => today()->subDays(12), 'bodega_origen_id' => $this->bod('REP'), 'bodega_destino_id' => $this->bod('MP'),
-            'referencia' => 'Grasa para puntos de engrase de extrusión'], [$linea('INS-GRASA', 10)], $u['abodega']);
-        $inv->registrar(['tipo' => 'ajuste_entrada', 'fecha' => today()->subDays(5), 'bodega_destino_id' => $this->bod('REP'),
-            'notas' => 'Conteo físico: aparecieron 2 rodamientos en caja sin rotular'], [$linea('REP-ROD-6205', 2)], $u['gbodega']);
-        $inv->registrar(['tipo' => 'ajuste_salida', 'fecha' => today(), 'bodega_origen_id' => $this->bod('PT'),
-            'notas' => 'Fardo de cajas octagonales aplastado por el montacargas'], [$linea('PT-CAJ-OCT', 1, 'Fardo x 40')], $u['auxbodega']);
+        // Ajustes
+        $inv->registrar(['tipo' => 'ajuste_entrada', 'fecha' => today()->subDays(5),
+            'notas' => 'Conteo físico: aparecieron 2 rodamientos en caja sin rotular'], [$linea('REP-ROD-6205', 2)], $u['gmantto']);
+        $inv->registrar(['tipo' => 'ajuste_salida', 'fecha' => today(),
+            'notas' => 'Discos de corte quebrados en la caja'], [$linea('INS-DISCO', 3)], $u['amantto']);
     }
 
     // ── Órdenes de trabajo en todos los estados ─────────────────────────
@@ -423,7 +323,7 @@ class DemoAmpliadoSeeder extends Seeder
             }
         }
 
-        // Completadas (llegan solas a la bitácora) con repuestos descontados de bodega.
+        // Completadas (llegan solas a la bitácora) con repuestos descontados de la bodega.
         $completadas = [
             ['COMPIR', 'Servicio de 4000 h a compresor de tornillo', 'preventivo', 'Mecánico', 'selvin', 44, 42, 5, 'Cambio de filtros de aire y aceite, separador y 5 gal de aceite sintético.', 'Unidad compresora',
                 [['REP-FILT-AIRE', 1], ['REP-FILT-ACE', 1], ['REP-SEP-ACE', 1], ['INS-ACE-COMP', 5]], false],
@@ -448,9 +348,9 @@ class DemoAmpliadoSeeder extends Seeder
             $ot = $ots->crear(['titulo' => $titulo, 'maquina_id' => $m($maq), 'tipo' => $tipo, 'especialidad_id' => $this->esp($esp), 'prioridad' => $paro ? 'alta' : 'media',
                 'responsable_id' => $u[$resp]->id, 'fecha_inicio' => today()->subDays($hace), 'fecha_vencimiento' => today()->subDays($termino + ($hace % 3 === 0 ? -1 : 1))], $u['amantto']);
             $ots->registrarSeguimiento($ot, ['estado' => 'en_progreso', 'progreso' => 50, 'texto' => 'Se inició el trabajo.', 'horas' => $horas / 2], $u[$resp]);
-            $inv->registrar(['tipo' => 'consumo_mantenimiento', 'fecha' => today()->subDays($termino), 'bodega_origen_id' => $this->bod('REP'),
+            $inv->registrar(['tipo' => 'consumo_mantenimiento', 'fecha' => today()->subDays($termino),
                 'maquina_id' => $m($maq), 'orden_trabajo_id' => $ot->id, 'referencia' => $ot->folio],
-                array_map(fn ($r) => ['producto_id' => $this->prod[$r[0]]->id, 'cantidad' => $r[1]], $repuestos), $u['abodega']);
+                array_map(fn ($r) => ['producto_id' => $this->prod[$r[0]]->id, 'cantidad' => $r[1]], $repuestos), $u[$resp]);
             $ots->completar($ot, ['trabajo_realizado' => $trabajo, 'componente' => $comp, 'horas' => $horas / 2,
                 'detuvo_maquina' => $paro, 'horas_paro' => $paro ? $horas + 1 : null], $u[$resp]);
             // Fechas reales del trabajo (el servicio usa "hoy").

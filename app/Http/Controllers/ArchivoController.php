@@ -8,7 +8,6 @@ use App\Models\Bitacora;
 use App\Models\Maquina;
 use App\Models\Movimiento;
 use App\Models\OrdenTrabajo;
-use App\Models\Pedido;
 use App\Models\Producto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -24,7 +23,6 @@ class ArchivoController extends Controller
         'bitacora' => [Bitacora::class, 'bitacora.crear'],
         'producto' => [Producto::class, 'inventario.gestionar'],
         'movimiento' => [Movimiento::class, 'movimientos.crear'],
-        'pedido' => [Pedido::class, 'pedidos.preparar'],
     ];
 
     public function store(Request $request)
@@ -78,9 +76,6 @@ class ArchivoController extends Controller
     {
         abort_if(! $tipo || ! $modelo, 404);
         $u = $request->user();
-        if ($tipo === 'pedido' && $modelo->piloto_id === $u->id) {
-            return; // el piloto sube la foto de la entrega
-        }
         if ($tipo === 'ot') {
             abort_unless($u->can('ot.editar') || ($u->can('ot.ejecutar') && $modelo->laEjecuta($u)) || $modelo->solicitante_id === $u->id, 403);
 

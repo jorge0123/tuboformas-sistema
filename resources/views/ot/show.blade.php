@@ -259,7 +259,7 @@
             @forelse ($lineas as $l)
                 <div class="flex items-center justify-between gap-3 border-b border-carbon-50 px-5 py-2.5 text-sm last:border-0">
                     <span class="min-w-0 truncate">{{ $l->producto->nombre }}</span>
-                    <span class="shrink-0 font-semibold tabular-nums">@num($l->cantidad_base) {{ $l->producto->unidad->abreviatura }}</span>
+                    <span class="shrink-0 font-semibold tabular-nums">@num($l->cantidad) {{ $l->producto->unidad->abreviatura }}</span>
                 </div>
             @empty
                 <p class="px-5 py-5 text-center text-sm text-carbon-500">Sin repuestos registrados.</p>
@@ -330,18 +330,12 @@
 <x-modal nombre="repuestos" titulo="Repuestos usados" ancho="max-w-2xl">
     <form method="POST" action="{{ route('ot.repuestos', $ot) }}" class="space-y-4" x-data="filas([], { producto_id: '', cantidad: 1 })">
         @csrf
-        <p class="text-sm text-carbon-600">Se descuentan de bodega como <b>consumo en mantenimiento</b> ligado a esta orden.</p>
-        <div>
-            <label class="etiqueta" for="bodega_id">Sale de</label>
-            <select id="bodega_id" name="bodega_id" class="campo">
-                @foreach ($bodegas as $b)<option value="{{ $b->id }}" @selected($b->codigo === 'REP')>{{ $b->nombre }}</option>@endforeach
-            </select>
-        </div>
+        <p class="text-sm text-carbon-600">Se descuentan de la bodega de repuestos como <b>consumo en mantenimiento</b> ligado a esta orden.</p>
         <template x-for="(f, i) in filas" :key="i">
             <div class="flex items-center gap-2">
                 <select :name="`lineas[${i}][producto_id]`" x-model="f.producto_id" required class="campo flex-1">
                     <option value="">Repuesto…</option>
-                    @foreach ($repuestos as $r)<option value="{{ $r->id }}">{{ $r->codigo }} · {{ $r->nombre }} ({{ \App\Support\Formato::numero($r->existencias->sum('cantidad')) }} {{ $r->unidad->abreviatura }})</option>@endforeach
+                    @foreach ($repuestos as $r)<option value="{{ $r->id }}">{{ $r->codigo }} · {{ $r->nombre }} ({{ \App\Support\Formato::numero($r->existencia) }} {{ $r->unidad->abreviatura }})</option>@endforeach
                 </select>
                 <input :name="`lineas[${i}][cantidad]`" x-model="f.cantidad" type="number" step="any" min="0" required class="campo w-24">
                 <button type="button" class="rounded-md p-2 text-carbon-400 hover:bg-carbon-100 hover:text-marca-700" @click="quitar(i)"><x-icono n="x" clase="size-4" /></button>
@@ -350,7 +344,7 @@
         <button type="button" class="text-sm font-semibold text-marca-700 hover:underline" @click="agregar()">+ Otro repuesto</button>
         <div class="flex justify-end gap-2 pt-2">
             <button type="button" class="btn-secundario" @click="$dispatch('cerrar-modal')">Cancelar</button>
-            <button class="btn-oscuro"><x-icono n="check" clase="size-4" /> Descontar de bodega</button>
+            <button class="btn-oscuro"><x-icono n="check" clase="size-4" /> Descontar de la bodega</button>
         </div>
     </form>
 </x-modal>

@@ -32,7 +32,7 @@
     $menu = \App\Support\Menu::para($usuario);
     $barra = \App\Support\Menu::barraInferior($usuario);
     // Formularios y pantallas con captura propia no se refrescan solas.
-    $enVivo = $vivo && ! request()->routeIs('*.create', '*.edit', 'bodega.*', 'perfil', 'roles.*', 'catalogos.*');
+    $enVivo = $vivo && ! request()->routeIs('*.create', '*.edit', 'perfil', 'roles.*', 'catalogos.*');
 @endphp
 
 {{-- Barra lateral: se contrae a solo íconos (Ctrl/⌘ + B). En celular es un cajón. --}}
@@ -47,7 +47,7 @@
             <img src="{{ asset('img/logo.png') }}" alt="" class="size-9 shrink-0 object-contain transition-transform duration-300 hover:rotate-[-6deg]">
             <span class="menu-texto leading-tight">
                 <span class="block font-display text-[15px] font-extrabold tracking-tight text-white">tuboformas</span>
-                <span class="block text-[11px] font-medium text-carbon-400">Mantenimiento y bodega</span>
+                <span class="block text-[11px] font-medium text-carbon-400">Mantenimiento</span>
             </span>
         </a>
         <button class="btn-icono ml-auto text-carbon-400 hover:text-white lg:hidden" @click="menu = false" aria-label="Cerrar menú"><x-icono n="x" /></button>

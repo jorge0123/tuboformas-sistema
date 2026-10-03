@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
 
         // Datos de ejemplo solo en local (o si se pide explícitamente).
         if (app()->environment('local') || env('SEED_DEMO')) {
-            $this->call([DemoSeeder::class, DemoAmpliadoSeeder::class, DemoPedidosSeeder::class, DemoViajesSeeder::class]);
+            $this->call([DemoSeeder::class, DemoAmpliadoSeeder::class]);
         }
     }
 }

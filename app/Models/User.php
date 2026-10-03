@@ -6,6 +6,7 @@ use App\Support\Permisos;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -14,7 +15,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'username', 'email', 'password', 'puesto', 'telefono',
-        'especialidad_id', 'es_piloto', 'activo', 'notif_email', 'ultimo_acceso_at',
+        'especialidad_id', 'activo', 'notif_email', 'ultimo_acceso_at',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -22,7 +23,6 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'es_piloto' => 'boolean',
             'email_verified_at' => 'datetime',
             'ultimo_acceso_at' => 'datetime',
             'password' => 'hashed',
@@ -46,7 +46,7 @@ class User extends Authenticatable
         return $this->hasRole(Permisos::SUPER_ADMIN);
     }
 
-    public function rolPrincipal(): ?\Spatie\Permission\Models\Role
+    public function rolPrincipal(): ?Role
     {
         return $this->roles->first();
     }

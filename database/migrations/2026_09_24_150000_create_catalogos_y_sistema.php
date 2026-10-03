@@ -28,15 +28,6 @@ return new class extends Migration
             });
         }
 
-        Schema::create('bodegas', function (Blueprint $table) {
-            $table->id();
-            $table->string('codigo', 20)->unique();
-            $table->string('nombre', 100);
-            $table->string('descripcion')->nullable();
-            $table->boolean('activo')->default(true);
-            $table->timestamps();
-        });
-
         // Numeración correlativa (OT-000001, MOV-000001…), bloqueada por fila.
         Schema::create('folios', function (Blueprint $table) {
             $table->string('clave', 20)->primary();
@@ -75,7 +66,6 @@ return new class extends Migration
         Schema::dropIfExists('auditorias');
         Schema::dropIfExists('archivos');
         Schema::dropIfExists('folios');
-        Schema::dropIfExists('bodegas');
         foreach (['unidades', 'categorias_producto', 'especialidades', 'areas'] as $t) {
             Schema::dropIfExists($t);
         }

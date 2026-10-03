@@ -37,8 +37,6 @@
                 </div>
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="activo" value="1" class="check" @checked(old('activo', $u->activo))> Usuario activo</label>
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="notif_email" value="1" class="check" @checked(old('notif_email', $u->notif_email))> Recibir avisos por correo</label>
-                <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="es_piloto" value="1" class="check mt-0.5" @checked(old('es_piloto', $u->es_piloto))>
-                    <span>Es piloto <span class="block text-xs text-carbon-500">Aparece para llevar entregas de pedidos, recibe el aviso de su ruta y puede confirmar la entrega desde el teléfono.</span></span></label>
             </div>
         </section>
     </div>

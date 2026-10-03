@@ -7,19 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 class Producto extends Model
 {
     protected $fillable = [
-        'codigo', 'nombre', 'tipo', 'categoria_id', 'medida', 'color', 'unidad_id', 'stock_minimo',
+        'codigo', 'nombre', 'tipo', 'categoria_id', 'medida', 'unidad_id', 'existencia', 'stock_minimo',
         'costo_promedio', 'ubicacion', 'foto', 'descripcion', 'activo',
     ];
 
     protected $casts = [
+        'existencia' => 'decimal:3',
         'stock_minimo' => 'decimal:3',
         'costo_promedio' => 'decimal:4',
         'activo' => 'boolean',
     ];
 
     public const TIPOS = [
-        'materia_prima' => 'Materia prima',
-        'producto_terminado' => 'Producto terminado',
         'repuesto' => 'Repuesto',
         'insumo' => 'Insumo',
     ];
@@ -32,16 +31,6 @@ class Producto extends Model
     public function unidad()
     {
         return $this->belongsTo(Unidad::class);
-    }
-
-    public function presentaciones()
-    {
-        return $this->hasMany(ProductoPresentacion::class)->orderBy('factor');
-    }
-
-    public function existencias()
-    {
-        return $this->hasMany(Existencia::class);
     }
 
     public function proveedores()
@@ -60,26 +49,19 @@ class Producto extends Model
         return $this->morphMany(Archivo::class, 'adjuntable')->latest();
     }
 
-    /** Existencia total en todas las bodegas (usa withSum si viene cargado). */
-    public function stockTotal(): float
-    {
-        return (float) ($this->existencias_sum_cantidad ?? $this->existencias->sum('cantidad'));
-    }
-
     public function bajoMinimo(): bool
     {
-        return (float) $this->stock_minimo > 0 && $this->stockTotal() < (float) $this->stock_minimo;
+        return (float) $this->stock_minimo > 0 && (float) $this->existencia < (float) $this->stock_minimo;
+    }
+
+    public function scopeBajoMinimo($q)
+    {
+        $q->where('stock_minimo', '>', 0)->whereColumn('existencia', '<', 'stock_minimo');
     }
 
     public function etiqueta(): string
     {
-        return $this->codigo.' · '.$this->nombre.($this->color ? ' '.$this->color : '');
-    }
-
-    /** Texto del QR de la etiqueta: TF:<código>:<id de presentación, 0 = unidad base>. */
-    public function textoQr(?ProductoPresentacion $pres = null): string
-    {
-        return 'TF:'.$this->codigo.':'.($pres?->id ?? 0);
+        return $this->codigo.' · '.$this->nombre;
     }
 
     public function scopeBuscar($q, ?string $texto)

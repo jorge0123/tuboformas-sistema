@@ -15,7 +15,6 @@ class Proveedor extends Model
     public const TIPOS = [
         'repuestos' => 'Repuestos',
         'servicios' => 'Servicios técnicos',
-        'materia_prima' => 'Materia prima',
         'insumos' => 'Insumos',
     ];
 

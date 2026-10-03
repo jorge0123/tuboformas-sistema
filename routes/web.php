@@ -5,16 +5,13 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\CatalogoController;
-use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ConteoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HerramientaController;
-use App\Http\Controllers\IngresoRapidoController;
 use App\Http\Controllers\MaquinaController;
 use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\OrdenTrabajoController;
-use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\ProductoController;
@@ -22,7 +19,6 @@ use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\UsuarioController;
-use App\Http\Controllers\ViajeController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -79,14 +75,10 @@ Route::middleware(['auth', 'activo'])->group(function () {
     Route::delete('proveedores/{proveedor}/productos/{producto}', [ProveedorController::class, 'quitarProducto'])->name('proveedores.productos.destroy');
     Route::resource('proveedores', ProveedorController::class)->parameters(['proveedores' => 'proveedor']);
 
-    // ── Bodega ─────────────────────────────────────────────────────────
+    // ── Bodega de repuestos ────────────────────────────────────────────
     Route::get('productos/buscar', [ProductoController::class, 'buscar'])->name('productos.buscar');
     Route::get('productos/exportar', [ProductoController::class, 'exportar'])->name('productos.exportar');
     Route::resource('productos', ProductoController::class)->parameters(['productos' => 'producto']);
-
-    Route::get('bodega/ingreso-rapido', [IngresoRapidoController::class, 'index'])->name('bodega.ingreso-rapido');
-    Route::post('bodega/ingreso-rapido', [IngresoRapidoController::class, 'store'])->name('bodega.ingreso-rapido.store');
-    Route::get('bodega/etiquetas', [IngresoRapidoController::class, 'etiquetas'])->name('bodega.etiquetas');
 
     Route::get('movimientos/exportar', [MovimientoController::class, 'exportar'])->name('movimientos.exportar');
     Route::post('movimientos/{movimiento}/aprobar', [MovimientoController::class, 'aprobar'])->name('movimientos.aprobar');
@@ -99,23 +91,9 @@ Route::middleware(['auth', 'activo'])->group(function () {
     Route::post('conteos/{conteo}/cancelar', [ConteoController::class, 'cancelar'])->name('conteos.cancelar');
     Route::resource('conteos', ConteoController::class)->only(['index', 'create', 'store', 'show']);
 
-    // ── Pedidos de clientes ────────────────────────────────────────────
-    Route::post('pedidos/{pedido}/tomar', [PedidoController::class, 'tomar'])->name('pedidos.tomar');
-    Route::post('pedidos/{pedido}/lineas/{linea}', [PedidoController::class, 'linea'])->name('pedidos.linea');
-    Route::post('pedidos/{pedido}/listo', [PedidoController::class, 'listo'])->name('pedidos.listo');
-    Route::post('pedidos/{pedido}/despachar', [PedidoController::class, 'despachar'])->name('pedidos.despachar');
-    Route::post('pedidos/{pedido}/entregar', [PedidoController::class, 'entregar'])->name('pedidos.entregar');
-    Route::post('pedidos/{pedido}/cancelar', [PedidoController::class, 'cancelar'])->name('pedidos.cancelar');
-    Route::post('pedidos/{pedido}/comentar', [PedidoController::class, 'comentar'])->name('pedidos.comentar');
-    Route::post('viajes/{viaje}/pedidos/{pedido}/entregar', [ViajeController::class, 'entregar'])->name('viajes.entregar');
-    Route::post('viajes/{viaje}/pedidos/{pedido}/no-entregado', [ViajeController::class, 'noEntregado'])->name('viajes.no-entregado');
-    Route::resource('viajes', ViajeController::class)->only(['index', 'create', 'store', 'show']);
-    Route::resource('pedidos', PedidoController::class)->except('destroy');
-    Route::resource('clientes', ClienteController::class)->except('destroy');
-
     // ── Reportes ───────────────────────────────────────────────────────
     Route::get('reportes/mantenimiento', [ReporteController::class, 'mantenimiento'])->name('reportes.mantenimiento');
-    Route::get('reportes/bodega', [ReporteController::class, 'bodega'])->name('reportes.bodega');
+    Route::get('reportes/repuestos', [ReporteController::class, 'repuestos'])->name('reportes.repuestos');
 
     // ── Administración ─────────────────────────────────────────────────
     Route::resource('usuarios', UsuarioController::class)->except(['show', 'destroy'])->parameters(['usuarios' => 'usuario']);

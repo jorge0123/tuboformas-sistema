@@ -6,16 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Conteo extends Model
 {
-    protected $fillable = ['folio', 'bodega_id', 'estado', 'fecha', 'notas', 'user_id', 'aplicado_por', 'aplicado_at'];
+    protected $fillable = ['folio', 'estado', 'fecha', 'notas', 'user_id', 'aplicado_por', 'aplicado_at'];
 
     protected $casts = ['fecha' => 'date', 'aplicado_at' => 'datetime'];
 
     public const ESTADOS = ['abierto' => 'Abierto', 'aplicado' => 'Aplicado', 'cancelado' => 'Cancelado'];
-
-    public function bodega()
-    {
-        return $this->belongsTo(Bodega::class);
-    }
 
     public function lineas()
     {

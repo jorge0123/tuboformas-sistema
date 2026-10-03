@@ -7,14 +7,15 @@
         <div>
             <div class="flex items-center gap-2"><span class="font-mono text-sm font-bold text-carbon-400">{{ $conteo->folio }}</span>
                 <span class="{{ ['abierto' => 'insignia-azul', 'aplicado' => 'insignia-verde', 'cancelado' => 'insignia-gris'][$conteo->estado] }}">{{ \App\Models\Conteo::ESTADOS[$conteo->estado] }}</span></div>
-            <h2 class="mt-1 font-display text-2xl font-extrabold">{{ $conteo->bodega->nombre }}</h2>
+            <h2 class="mt-1 font-display text-2xl font-extrabold">Conteo de repuestos</h2>
+            @if ($conteo->notas)<p class="text-sm text-carbon-600">{{ $conteo->notas }}</p>@endif
             <p class="text-sm text-carbon-500">Abierto por {{ $conteo->user->name }} el @fecha($conteo->fecha){{ $conteo->aplicadoPor ? ' · aplicado por '.$conteo->aplicadoPor->name.' el '.$conteo->aplicado_at->format('d/m/Y H:i') : '' }}</p>
         </div>
         @if ($abierto)
             @can('conteos.gestionar')
             <div class="flex flex-wrap gap-2">
                 <form method="POST" action="{{ route('conteos.cancelar', $conteo) }}" data-confirmar="No se modificará ninguna existencia." data-titulo="Cancelar conteo" data-boton="Cancelar conteo" data-peligro>@csrf<button class="btn-peligro">Cancelar conteo</button></form>
-                <form method="POST" action="{{ route('conteos.aplicar', $conteo) }}" data-confirmar="Las existencias de los productos contados quedarán iguales a lo contado. Los productos sin contar no se tocan." data-titulo="Aplicar conteo" data-boton="Aplicar ajustes">@csrf
+                <form method="POST" action="{{ route('conteos.aplicar', $conteo) }}" data-confirmar="La existencia de los repuestos contados quedará igual a lo contado. Los que no se contaron no se tocan." data-titulo="Aplicar conteo" data-boton="Aplicar ajustes">@csrf
                     <button class="btn-exito"><x-icono n="check" clase="size-4" /> Aplicar diferencias</button>
                 </form>
             </div>
@@ -22,7 +23,7 @@
         @endif
     </div>
     <div class="mt-5 grid grid-cols-3 gap-4 border-t border-carbon-100 pt-5">
-        <div><p class="dato-etiqueta">Productos</p><p class="font-display text-2xl font-extrabold">{{ $resumen['total'] }}</p></div>
+        <div><p class="dato-etiqueta">Repuestos</p><p class="font-display text-2xl font-extrabold">{{ $resumen['total'] }}</p></div>
         <div><p class="dato-etiqueta">Contados</p><p class="font-display text-2xl font-extrabold text-sky-700">{{ $resumen['contadas'] }}</p></div>
         <div><p class="dato-etiqueta">Con diferencia</p><p class="font-display text-2xl font-extrabold text-marca-700">{{ $resumen['diferencias'] }}</p></div>
     </div>
@@ -31,7 +32,7 @@
 <div class="my-5 flex flex-wrap items-center gap-2">
     <form method="GET" class="relative min-w-56 flex-1 sm:max-w-xs">
         <span class="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-carbon-400"><x-icono n="buscar" clase="size-4" /></span>
-        <input name="q" value="{{ request('q') }}" class="campo pl-9" placeholder="Buscar producto">
+        <input name="q" value="{{ request('q') }}" class="campo pl-9" placeholder="Buscar repuesto">
         @if (request('ver'))<input type="hidden" name="ver" value="{{ request('ver') }}">@endif
     </form>
     @foreach (['' => 'Todos', 'pendientes' => 'Sin contar', 'diferencias' => 'Con diferencia'] as $k => $v)
@@ -45,8 +46,8 @@
           .catch(e => avisar(e.message, 'error')) } }">
     <div class="divide-y divide-carbon-100">
         @forelse ($lineas as $l)
-            @php $dif = $l->diferencia(); $pres = $l->producto->presentaciones; @endphp
-            <div class="grid grid-cols-12 items-center gap-3 px-4 py-3" x-data="{ dif: @js($dif), pres: '', cant: '' }">
+            @php $dif = $l->diferencia(); @endphp
+            <div class="grid grid-cols-12 items-center gap-3 px-4 py-3" x-data="{ dif: @js($dif) }">
                 <div class="col-span-12 min-w-0 sm:col-span-5">
                     <p class="truncate font-semibold text-carbon-900">{{ $l->producto->nombre }}</p>
                     <p class="font-mono text-xs text-carbon-500">{{ $l->producto->codigo }}</p>
@@ -62,16 +63,6 @@
                                    @change="guardar($el, {{ $l->id }})" @guardado="dif = $event.detail">
                             <span class="text-xs text-carbon-500">{{ $l->producto->unidad->abreviatura }}</span>
                         </div>
-                        @if ($pres->isNotEmpty())
-                        <details class="mt-1 text-xs">
-                            <summary class="cursor-pointer text-carbon-500 hover:text-carbon-800">Contar por {{ mb_strtolower($pres->last()->nombre) }}</summary>
-                            <div class="mt-1 flex items-center gap-1">
-                                <input type="number" step="any" min="0" x-model="cant" class="campo w-20 py-1 text-xs" placeholder="#">
-                                <span>× {{ \App\Support\Formato::numero($pres->last()->factor) }} =</span>
-                                <button type="button" class="btn-secundario btn-sm" @click="const i = $el.closest('.grid').querySelector('input[placeholder=Contado]'); i.value = (parseFloat(cant) || 0) * {{ (float) $pres->last()->factor }}; guardar(i, {{ $l->id }})">Usar</button>
-                            </div>
-                        </details>
-                        @endif
                     @else
                         <p class="dato-etiqueta">Contado</p><p class="font-semibold tabular-nums">{{ $l->cantidad_contada !== null ? \App\Support\Formato::numero($l->cantidad_contada) : '—' }}</p>
                     @endif
@@ -85,7 +76,7 @@
                 @endif
             </div>
         @empty
-            <x-vacio icono="conteo" titulo="Sin productos en este filtro" />
+            <x-vacio icono="conteo" titulo="Sin repuestos en este filtro" />
         @endforelse
     </div>
 </div>

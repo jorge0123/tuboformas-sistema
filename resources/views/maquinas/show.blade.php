@@ -105,7 +105,7 @@
                                 <td class="tabla-num">@num($p->cantidad)</td>
                                 <td>
                                     @if ($p->producto)
-                                        @php $stock = $p->producto->existencias->sum('cantidad'); @endphp
+                                        @php $stock = (float) $p->producto->existencia; @endphp
                                         @can('inventario.ver')
                                         <a href="{{ route('productos.show', $p->producto) }}" class="{{ $stock > 0 ? 'insignia-verde' : 'insignia-roja' }}">@num($stock) disponibles</a>
                                         @else

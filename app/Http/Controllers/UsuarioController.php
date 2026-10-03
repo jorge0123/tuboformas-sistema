@@ -78,13 +78,13 @@ class UsuarioController extends Controller
     public function auditoria(Request $request)
     {
         $this->authorize('auditoria.ver');
-        $registros = \App\Models\Auditoria::with('user')
+        $registros = Auditoria::with('user')
             ->when($request->filled('usuario'), fn ($q) => $q->where('user_id', $request->usuario))
             ->when($request->filled('accion'), fn ($q) => $q->where('accion', $request->accion))
             ->when($request->filled('q'), fn ($q) => $q->where(fn ($w) => $w->where('descripcion', 'like', '%'.$request->q.'%')->orWhere('entidad', 'like', '%'.$request->q.'%')))
             ->latest('id')->paginate(50)->withQueryString();
         $usuarios = User::orderBy('name')->get(['id', 'name']);
-        $acciones = \App\Models\Auditoria::distinct()->orderBy('accion')->pluck('accion');
+        $acciones = Auditoria::distinct()->orderBy('accion')->pluck('accion');
 
         return view('usuarios.auditoria', compact('registros', 'usuarios', 'acciones'));
     }
@@ -119,7 +119,6 @@ class UsuarioController extends Controller
         abort_if($d['rol'] === Permisos::SUPER_ADMIN && ! $request->user()->esSuperAdmin(), 403, 'Solo un super administrador asigna ese rol.');
         $d['activo'] = $request->boolean('activo');
         $d['notif_email'] = $request->boolean('notif_email');
-        $d['es_piloto'] = $request->boolean('es_piloto');
         // Los permisos extra que ya trae el rol no se guardan aparte.
         $delRol = Role::findByName($d['rol'])->permissions->pluck('name')->all();
         $d['permisos_extra'] = array_values(array_diff($d['permisos_extra'] ?? [], $delRol));
