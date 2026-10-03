@@ -1,5 +1,5 @@
 @props(['desde', 'hasta'])
-<form method="GET" class="flex flex-wrap items-center gap-2">
+<form method="GET" class="flex flex-wrap items-center gap-2" data-filtro-vivo>
     @foreach ([30 => '30 días', 90 => '90 días', 365 => '12 meses'] as $d => $t)
         <a href="{{ request()->url() }}?desde={{ today()->subDays($d - 1)->format('Y-m-d') }}&hasta={{ today()->format('Y-m-d') }}"
            class="btn btn-sm {{ $desde->toDateString() === today()->subDays($d - 1)->toDateString() && $hasta->isToday() ? 'bg-carbon-900 text-white' : 'btn-secundario' }}">{{ $t }}</a>

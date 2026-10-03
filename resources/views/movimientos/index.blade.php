@@ -21,7 +21,7 @@
         <input type="date" name="desde" value="{{ request('desde') }}" class="campo w-auto" onchange="this.form.requestSubmit()" title="Desde">
         <input type="date" name="hasta" value="{{ request('hasta') }}" class="campo w-auto" onchange="this.form.requestSubmit()" title="Hasta">
     </x-filtros>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
         @can('reportes.exportar')<a href="{{ route('movimientos.exportar', request()->query()) }}" class="btn-secundario"><x-icono n="descargar" clase="size-4" /> Excel</a>@endcan
         @can('movimientos.crear')<a href="{{ route('movimientos.create') }}" class="btn-primario"><x-icono n="mas" clase="size-4" /> Registrar movimiento</a>@endcan
     </div>

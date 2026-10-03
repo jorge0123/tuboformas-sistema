@@ -14,7 +14,7 @@
             @foreach (['A', 'B', 'C'] as $c)<option value="{{ $c }}" @selected(request('criticidad') === $c)>Criticidad {{ $c }}</option>@endforeach
         </select>
     </x-filtros>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
         @can('reportes.exportar')
             <a href="{{ route('maquinas.exportar', request()->query()) }}" class="btn-secundario"><x-icono n="descargar" clase="size-4" /> Excel</a>
         @endcan

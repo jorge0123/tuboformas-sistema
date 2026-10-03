@@ -128,7 +128,8 @@ class InventarioService
     }
 
     /** Anula un movimiento confirmado creando su reverso. */
-    public function anular(Movimiento $mov, User $usuario, string $motivo): Movimiento
+    /** @param  bool  $avisar  false cuando otro proceso ya avisa (ej. un pedido que regresa a bodega). */
+    public function anular(Movimiento $mov, User $usuario, string $motivo, bool $avisar = true): Movimiento
     {
         if ($mov->estado !== 'confirmado' || $mov->tipo === 'reverso') {
             throw ValidationException::withMessages(['estado' => 'Este movimiento no se puede anular.']);
@@ -163,6 +164,9 @@ class InventarioService
         });
 
         Auditoria::registrar('anular', $mov, "{$mov->folio}: $motivo");
+        if ($avisar && $mov->user_id !== $usuario->id) {
+            $mov->user->notify(new Aviso('Movimiento anulado', "{$mov->folio} fue anulado por {$usuario->name}: $motivo", route('movimientos.show', $mov)));
+        }
 
         return $reverso;
     }

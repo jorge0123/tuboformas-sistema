@@ -9,10 +9,13 @@ use App\Models\Conteo;
 use App\Models\ConteoLinea;
 use App\Models\Existencia;
 use App\Models\Producto;
+use App\Models\User;
+use App\Notifications\Aviso;
 use App\Services\Folios;
 use App\Services\InventarioService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 
 /**
@@ -72,6 +75,10 @@ class ConteoController extends Controller
             return $conteo;
         });
         Auditoria::registrar('crear', $conteo, $conteo->folio);
+        Notification::send(
+            User::activos()->permission('conteos.registrar')->where('id', '!=', $request->user()->id)->get(),
+            new Aviso('Conteo físico abierto', "{$conteo->folio} · {$conteo->bodega->nombre}: ya pueden empezar a contar.", route('conteos.show', $conteo))
+        );
 
         return redirect()->route('conteos.show', $conteo)->with('ok', "Conteo {$conteo->folio} abierto con {$conteo->lineas()->count()} productos.");
     }
@@ -147,6 +154,12 @@ class ConteoController extends Controller
             $conteo->update(['estado' => 'aplicado', 'aplicado_por' => $u->id, 'aplicado_at' => now()]);
         });
         Auditoria::registrar('aplicar', $conteo, $conteo->folio.': '.count($entradas).' entradas, '.count($salidas).' salidas');
+        // Quienes contaron se enteran de que su conteo ya se aplicó.
+        Notification::send(
+            User::whereIn('id', $conteo->lineas()->whereNotNull('contado_por')->distinct()->pluck('contado_por'))
+                ->where('id', '!=', $request->user()->id)->activos()->get(),
+            new Aviso('Conteo aplicado', "{$conteo->folio}: ".(count($entradas) + count($salidas)).' productos ajustados.', route('conteos.show', $conteo))
+        );
 
         return back()->with('ok', 'Conteo aplicado. '.(count($entradas) + count($salidas)).' productos ajustados.');
     }

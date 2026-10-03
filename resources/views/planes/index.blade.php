@@ -8,7 +8,7 @@
         </select>
     </x-filtros>
     @can('planes.gestionar')
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
         <form method="POST" action="{{ route('planes.generar') }}">@csrf
             <button class="btn-secundario" title="Crea ahora las órdenes que el sistema genera cada mañana"><x-icono n="refrescar" clase="size-4" /> Generar órdenes de hoy</button>
         </form>

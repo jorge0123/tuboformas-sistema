@@ -67,7 +67,7 @@
                 @can('bitacora.eliminar')<button type="submit" form="eliminar" class="btn-peligro"><x-icono n="basura" clase="size-4" /> Eliminar</button>@endcan
             @endif
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
             <a href="{{ url()->previous() }}" class="btn-secundario">Cancelar</a>
             <button class="btn-primario"><x-icono n="check" clase="size-4" /> Guardar</button>
         </div>

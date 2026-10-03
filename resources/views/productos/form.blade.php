@@ -16,7 +16,9 @@
             <x-campo nombre="categoria_id" etiqueta="Categoría" clase="sm:col-span-2">
                 <select id="categoria_id" name="categoria_id" class="campo"><option value="">Sin categoría</option>@foreach ($categorias as $c)<option value="{{ $c->id }}" @selected(old('categoria_id', $p->categoria_id) == $c->id)>{{ $c->nombre }}</option>@endforeach</select>
             </x-campo>
-            <x-campo nombre="medida" etiqueta="Medida" :valor="$p->medida" clase="sm:col-span-2" placeholder="3/4&quot;" />
+            <x-campo nombre="medida" etiqueta="Medida" :valor="$p->medida" clase="sm:col-span-1" placeholder="3/4&quot;" />
+            <x-campo nombre="color" etiqueta="Color" :valor="$p->color" clase="sm:col-span-1" placeholder="Gris" list="colores" />
+            <datalist id="colores"><option value="Gris"><option value="Naranja"><option value="Blanco"><option value="Negro"></datalist>
             <x-campo nombre="unidad_id" etiqueta="Unidad base" requerido clase="sm:col-span-2" ayuda="En lo que se lleva la existencia (pieza, tubo, kg…).">
                 <select id="unidad_id" name="unidad_id" class="campo">@foreach ($unidades as $u)<option value="{{ $u->id }}" @selected(old('unidad_id', $p->unidad_id) == $u->id)>{{ $u->nombre }} ({{ $u->abreviatura }})</option>@endforeach</select>
             </x-campo>
@@ -55,7 +57,7 @@
 
     <div class="flex items-center justify-between">
         <div>@if ($p->exists)@can('inventario.gestionar')<button type="submit" form="eliminar" class="btn-peligro"><x-icono n="basura" clase="size-4" /> Eliminar</button>@endcan @endif</div>
-        <div class="flex gap-2"><a href="{{ $p->exists ? route('productos.show', $p) : route('productos.index') }}" class="btn-secundario">Cancelar</a><button class="btn-primario"><x-icono n="check" clase="size-4" /> Guardar</button></div>
+        <div class="flex flex-wrap gap-2"><a href="{{ $p->exists ? route('productos.show', $p) : route('productos.index') }}" class="btn-secundario">Cancelar</a><button class="btn-primario"><x-icono n="check" clase="size-4" /> Guardar</button></div>
     </div>
 </form>
 @if ($p->exists)

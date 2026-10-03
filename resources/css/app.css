@@ -90,10 +90,19 @@
     .insignia-oscura { @apply insignia bg-carbon-800 text-white ring-carbon-800; }
 
     /* Navegación lateral */
-    .nav-grupo { @apply px-3 pt-5 pb-1.5 text-[11px] font-semibold tracking-wider text-carbon-500 uppercase; }
-    .nav-link { @apply relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-carbon-300 transition hover:bg-white/5 hover:text-white; }
-    .nav-link.activo { @apply bg-white/10 text-white; }
-    .nav-link.activo::before { content: ''; @apply absolute top-1.5 bottom-1.5 -left-3 w-1 rounded-r bg-marca-500; }
+    .nav-grupo { @apply flex w-full cursor-pointer items-center gap-2 rounded-md px-3 pt-5 pb-1.5 text-[11px] font-semibold tracking-wider text-carbon-500 uppercase transition-colors hover:text-carbon-300; }
+    .nav-link { @apply relative flex items-center gap-3 overflow-hidden rounded-lg px-3 py-2 text-sm font-medium text-carbon-300 transition duration-150 hover:bg-white/[.05] hover:text-white active:scale-[.98]; }
+    .nav-link .nav-icono { @apply text-carbon-500 transition duration-200; }
+    .nav-link:hover .nav-icono { @apply scale-110 text-carbon-200; }
+    .nav-link.activo { @apply bg-gradient-to-r from-white/[.10] to-white/[.02] text-white; }
+    .nav-link.activo .nav-icono { @apply text-marca-400; }
+    .nav-link.activo::before { content: ''; @apply absolute top-2 bottom-2 left-0 w-[3px] rounded-full bg-marca-500 shadow-[0_0_10px_1px_rgba(242,40,58,.6)]; }
+    .nav-contador { @apply ml-auto rounded-full px-1.5 py-px text-[11px] font-bold tabular-nums ring-1 ring-inset; }
+    .nav-punto { @apply absolute -top-1 -right-1 size-2 scale-0 rounded-full opacity-0 ring-2 ring-carbon-950 transition duration-200; }
+    .barra-item { @apply relative flex flex-col items-center justify-center gap-0.5 text-[10.5px] font-semibold text-carbon-500 transition active:scale-90; }
+    .barra-item.activo { @apply text-marca-700; }
+    .barra-item.activo::before { content: ''; @apply absolute top-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-marca-600; }
+    .nav-perfil { @apply flex items-center gap-3 overflow-hidden rounded-lg p-1.5 transition hover:bg-white/[.05]; }
 
     /* Pestañas */
     .pestanas { @apply flex gap-1 overflow-x-auto border-b border-carbon-200; }
@@ -113,6 +122,7 @@
 }
 
 @keyframes vaciar { from { width: 100%; } to { width: 0%; } }
+@keyframes barrido { 0%, 100% { top: 12%; } 50% { top: 86%; } }
 @keyframes aparecer { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .aparecer { animation: aparecer 0.35s ease-out both; }
 
@@ -122,3 +132,99 @@
     .no-imprimir { display: none !important; }
     body { background: white; }
 }
+
+/* Menú lateral: 17rem en celular, 16rem expandido y 4.5rem contraído en escritorio.
+   La clase va en <html> (script en <head>) para que no parpadee al cargar la página. */
+.barra-lateral { width: 17rem; }
+.menu-texto { white-space: nowrap; transition: opacity .18s ease; }
+@media (min-width: 1024px) {
+    .barra-lateral { width: 16rem; }
+    .contenido { padding-left: 16rem; }
+    html.menu-colapsado .barra-lateral { width: 4.5rem; }
+    html.menu-colapsado .contenido { padding-left: 4.5rem; }
+    html.menu-colapsado .menu-texto { opacity: 0; pointer-events: none; }
+    html.menu-colapsado .nav-link { padding-left: 15px; }
+    html.menu-colapsado .nav-perfil { padding-left: 4px; }
+    html.menu-colapsado .nav-punto { opacity: 1; scale: 1; }
+    .nav-grupo { height: 2.625rem; } /* alto fijo: así la transición a línea divisoria es suave */
+    html.menu-colapsado .nav-grupo { pointer-events: none; height: 1px; margin: 14px 10px 10px; padding: 0; background: rgb(255 255 255 / .07); overflow: hidden; }
+    html.menu-animado .barra-lateral { transition: width .3s cubic-bezier(.2, .8, .2, 1), translate .3s ease-out; }
+    /* El contenido se acomoda de una vez (animarlo recalcula toda la página en cada cuadro y se traba);
+       solo el menú se anima, y se pinta en su propia capa. */
+    html.menu-animado .barra-lateral { will-change: width; }
+    html.menu-animado .nav-link, html.menu-animado .nav-perfil { transition-property: padding, background-color, color, scale; }
+    html.menu-animado .nav-grupo { transition: height .25s ease, margin .25s ease, padding .25s ease, background-color .25s ease, color .15s; }
+}
+@media (prefers-reduced-motion: reduce) {
+    html.menu-animado .barra-lateral, html.menu-animado .contenido, .menu-texto { transition: none; }
+}
+
+/* Barra de carga de las pantallas en vivo (resources/js/vivo.js). */
+#barra-carga { position: fixed; top: 0; left: 0; z-index: 100; height: 2px; width: 0; background: var(--color-marca-600); box-shadow: 0 0 8px var(--color-marca-500); opacity: 0; transition: width .4s ease, opacity .3s ease .2s; pointer-events: none; }
+#barra-carga.activa { width: 70%; opacity: 1; transition: width 8s cubic-bezier(.1, .7, .2, 1), opacity .1s; }
+@keyframes campana { 0%, 100% { rotate: 0deg; } 20% { rotate: 14deg; } 40% { rotate: -12deg; } 60% { rotate: 8deg; } 80% { rotate: -4deg; } }
+
+/* ── Celular ─────────────────────────────────────────────────────────────
+   Tablas → tarjetas: cada fila es una tarjeta; la primera celda es el título y el resto se
+   acomoda en dos columnas con su encabezado como etiqueta (data-label lo pone resources/js/movil.js).
+   Una tabla que deba verse como tabla siempre lleva la clase .tabla-fija. */
+@media (max-width: 767.98px) {
+    .tabla:not(.tabla-fija) { display: block; width: 100%; min-width: 0; }
+    .tabla:not(.tabla-fija) thead { display: none; }
+    .tabla:not(.tabla-fija) tbody { display: block; }
+    .tabla:not(.tabla-fija) tbody tr { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem 1rem; padding: .875rem 1rem; }
+    .tabla:not(.tabla-fija) tbody tr + tr { border-top: 1px solid var(--color-carbon-100); }
+    .tabla:not(.tabla-fija) tbody td:not(.hidden) { display: block; min-width: 0; max-width: none; padding: 0 !important; text-align: left !important; }
+    .tabla:not(.tabla-fija) tbody td:first-child,
+    .tabla:not(.tabla-fija) tbody td[colspan],
+    .tabla:not(.tabla-fija) tbody td[data-ancho] { grid-column: 1 / -1; }
+    .tabla:not(.tabla-fija) tbody td[data-vacio], .tabla:not(.tabla-fija) tbody td[data-movil-oculto] { display: none !important; }
+    .tabla[data-columnas="3"]:not(.tabla-fija) tbody tr { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem .75rem; }
+    .tabla:not(.tabla-fija) tbody td[data-label]:not(:first-child)::before {
+        content: attr(data-label); display: block; margin-bottom: 2px;
+        font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--color-carbon-400);
+    }
+    .tabla:not(.tabla-fija) tbody td:first-child .truncate { white-space: normal; overflow: visible; }
+    /* Un dato largo (nombre con avatar) se corta con "…" en vez de montarse sobre la columna de al lado. */
+    .tabla:not(.tabla-fija) tbody td:not(:first-child) { overflow: hidden; }
+    .tabla:not(.tabla-fija) tbody td:not(:first-child) :is(.flex, .inline-flex) { min-width: 0; max-width: 100%; }
+    .tabla:not(.tabla-fija) tbody td:not(:first-child) :is(.flex, .inline-flex) > :not(:last-child) { flex-shrink: 0; }
+    .tabla:not(.tabla-fija) tbody td:not(:first-child) :is(.flex, .inline-flex) > :last-child:not(svg):not(:first-child) { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Fila que abre algo: flecha a la derecha del título. */
+    .tabla:not(.tabla-fija) tbody tr[onclick] td:first-child { padding-right: 1.5rem !important; }
+    .tabla:not(.tabla-fija) tbody tr[onclick]::after {
+        content: ''; position: absolute; top: 1.05rem; right: .875rem; width: 1rem; height: 1rem; opacity: .35;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f1d1b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+    }
+    .tabla:not(.tabla-fija) tbody tr:active { background: var(--color-carbon-50); }
+
+    /* iPhone hace zoom al tocar un campo con letra menor a 16 px. */
+    .campo, input.campo, select.campo, textarea.campo { font-size: 16px; }
+}
+
+/* Pantallas táctiles: nada que se toque mide menos de 36 px. */
+@media (pointer: coarse) {
+    .btn-sm { min-height: 2.25rem; }
+    .btn-icono { min-width: 2.5rem; min-height: 2.5rem; }
+}
+
+/* Pestañas deslizables: se desvanecen en el borde para que se note que hay más. */
+.pestanas { scrollbar-width: none; scroll-snap-type: x proximity; }
+.pestanas::-webkit-scrollbar { display: none; }
+.pestana { scroll-snap-align: start; }
+@media (max-width: 767.98px) {
+    .pestanas { mask-image: linear-gradient(to right, #000 85%, transparent); }
+    .pestanas.al-final { mask-image: none; }
+}
+
+/* Filtros abiertos en celular: cada filtro a media pantalla. */
+@media (max-width: 639.98px) {
+    .filtros-extra > * { flex: 1 1 calc(50% - .25rem); min-width: 0; }
+    .filtros-extra > .campo, .filtros-extra select { width: 100%; }
+}
+
+/* Alto de la barra inferior del celular: el contenido y las barras fijas de cada pantalla se apoyan en ella. */
+:root { --alto-barra: calc(4rem + env(safe-area-inset-bottom)); }
+@media (min-width: 1024px) { :root { --alto-barra: 0px; } }
+.contenido { padding-bottom: var(--alto-barra); }
+.sobre-barra { bottom: var(--alto-barra) !important; }

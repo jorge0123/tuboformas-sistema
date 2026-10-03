@@ -44,7 +44,7 @@
             <div class="space-y-4 p-5">
                 <div>
                     <span class="etiqueta">Se repite cada</span>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
                         <input name="frecuencia_valor" type="number" min="1" max="365" x-model="valor" class="campo w-20" required>
                         <select name="frecuencia_unidad" x-model="unidad" class="campo flex-1">
                             @foreach (\App\Models\PlanMantenimiento::UNIDADES as $k => $v)<option value="{{ $k }}">{{ $v }}</option>@endforeach
@@ -94,7 +94,7 @@
                 <label class="flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="activo" value="1" class="check" @checked(old('activo', $plan->activo))> Plan activo</label>
             </div>
         </section>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
             @if ($plan->exists)<button type="submit" form="eliminar" class="btn-peligro"><x-icono n="basura" clase="size-4" /></button>@endif
             <a href="{{ route('planes.index') }}" class="btn-secundario flex-1">Cancelar</a>
             <button class="btn-primario flex-[2]"><x-icono n="check" clase="size-4" /> Guardar plan</button>

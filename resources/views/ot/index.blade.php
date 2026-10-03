@@ -5,7 +5,7 @@
         <a href="{{ route('ot.kanban', request()->except('estado', 'page')) }}" class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold text-carbon-600 hover:text-carbon-900"><x-icono n="kanban" clase="size-4" /> Kanban</a>
         <a href="{{ route('calendario') }}" class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold text-carbon-600 hover:text-carbon-900"><x-icono n="calendario" clase="size-4" /> Calendario</a>
     </div>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
         @can('reportes.exportar')<a href="{{ route('ot.exportar', request()->query()) }}" class="btn-secundario"><x-icono n="descargar" clase="size-4" /> Excel</a>@endcan
         @can('ot.crear')<a href="{{ route('ot.create') }}" class="btn-primario"><x-icono n="mas" clase="size-4" /> Nueva orden</a>@endcan
     </div>
@@ -30,7 +30,7 @@
                     </td>
                     <td class="whitespace-nowrap">
                         @if ($ot->responsable)
-                            <span class="flex items-center gap-2"><span class="grid size-7 place-items-center rounded-full bg-carbon-100 text-[10px] font-bold text-carbon-700">{{ $ot->responsable->iniciales() }}</span>{{ $ot->responsable->name }}</span>
+                            <span class="flex items-center gap-2"><span class="grid size-7 place-items-center rounded-full bg-carbon-100 text-[10px] font-bold text-carbon-700">{{ $ot->responsable->iniciales() }}</span><span class="truncate">{{ $ot->responsable->name }}</span></span>
                         @else
                             <span class="insignia-ambar">Sin asignar</span>
                         @endif

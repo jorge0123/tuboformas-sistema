@@ -30,7 +30,7 @@
                 <select name="producto_id" required class="campo col-span-2 sm:col-span-3"><option value="">Agregar producto…</option>@foreach ($disponibles as $d)<option value="{{ $d->id }}">{{ $d->codigo }} · {{ $d->nombre }}</option>@endforeach</select>
                 <input name="codigo_proveedor" class="campo" placeholder="Su código">
                 @can('inventario.ver_costos')<input name="precio" type="number" step="0.01" min="0" class="campo" placeholder="Precio Q">@endcan
-                <div class="flex gap-2"><input name="dias_entrega" type="number" min="0" class="campo" placeholder="Días"><button class="btn-oscuro btn-icono" aria-label="Agregar"><x-icono n="mas" clase="size-4" /></button></div>
+                <div class="flex flex-wrap gap-2"><input name="dias_entrega" type="number" min="0" class="campo" placeholder="Días"><button class="btn-oscuro btn-icono" aria-label="Agregar"><x-icono n="mas" clase="size-4" /></button></div>
             </form>
             @endif
             @endcan

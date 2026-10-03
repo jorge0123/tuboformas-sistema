@@ -12,7 +12,7 @@
         </div>
         @if ($abierto)
             @can('conteos.gestionar')
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <form method="POST" action="{{ route('conteos.cancelar', $conteo) }}" data-confirmar="No se modificará ninguna existencia." data-titulo="Cancelar conteo" data-boton="Cancelar conteo" data-peligro>@csrf<button class="btn-peligro">Cancelar conteo</button></form>
                 <form method="POST" action="{{ route('conteos.aplicar', $conteo) }}" data-confirmar="Las existencias de los productos contados quedarán iguales a lo contado. Los productos sin contar no se tocan." data-titulo="Aplicar conteo" data-boton="Aplicar ajustes">@csrf
                     <button class="btn-exito"><x-icono n="check" clase="size-4" /> Aplicar diferencias</button>

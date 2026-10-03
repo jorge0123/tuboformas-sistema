@@ -112,7 +112,7 @@
             </div>
         </section>
 
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
             <a href="{{ $ot->exists ? route('ot.show', $ot) : route('ot.index') }}" class="btn-secundario flex-1">Cancelar</a>
             <button class="btn-primario flex-[2]"><x-icono n="check" clase="size-4" /> {{ $ot->exists ? 'Guardar cambios' : 'Crear orden' }}</button>
         </div>

@@ -153,7 +153,7 @@
         </div>
     </section>
 
-    <div class="sticky bottom-0 z-10 flex items-center justify-end gap-2 rounded-xl border border-carbon-200 bg-white/95 px-3 py-3 shadow-lg backdrop-blur">
+    <div class="sobre-barra sticky bottom-0 z-10 flex items-center justify-end gap-2 rounded-xl border border-carbon-200 bg-white/95 px-3 py-3 shadow-lg backdrop-blur">
         <a href="{{ route('movimientos.create') }}" class="btn-secundario">Cambiar tipo</a>
         <button class="btn-primario" :disabled="enviando || !valido()">
             <x-icono n="check" clase="size-4" />

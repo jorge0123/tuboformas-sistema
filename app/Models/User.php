@@ -14,7 +14,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'username', 'email', 'password', 'puesto', 'telefono',
-        'especialidad_id', 'activo', 'notif_email', 'ultimo_acceso_at',
+        'especialidad_id', 'es_piloto', 'activo', 'notif_email', 'ultimo_acceso_at',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -22,6 +22,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'es_piloto' => 'boolean',
             'email_verified_at' => 'datetime',
             'ultimo_acceso_at' => 'datetime',
             'password' => 'hashed',

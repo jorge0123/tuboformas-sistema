@@ -13,6 +13,14 @@
     ];
 @endphp
 <div class="mx-auto max-w-4xl">
+    <a href="{{ route('bodega.ingreso-rapido') }}" class="aparecer group mb-5 flex items-center gap-4 rounded-xl bg-carbon-900 p-5 text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
+        <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-marca-600"><x-icono n="escanear" clase="size-6" /></span>
+        <div class="min-w-0 flex-1">
+            <p class="font-display font-bold">Ingreso rápido con QR</p>
+            <p class="text-sm text-carbon-300">Producto terminado desde el celular: escanea la bolsa, confirma y listo.</p>
+        </div>
+        <x-icono n="derecha" clase="size-5 text-carbon-400 transition group-hover:translate-x-0.5 group-hover:text-white" />
+    </a>
     <p class="mb-5 text-sm text-carbon-600">¿Qué vas a registrar? Los tipos siguen el flujo de la planta: llega materia prima, sale a producción, regresa como producto terminado y se despacha.</p>
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         @foreach ($iconos as $tipo => [$icono, $color])

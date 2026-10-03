@@ -119,6 +119,7 @@ class UsuarioController extends Controller
         abort_if($d['rol'] === Permisos::SUPER_ADMIN && ! $request->user()->esSuperAdmin(), 403, 'Solo un super administrador asigna ese rol.');
         $d['activo'] = $request->boolean('activo');
         $d['notif_email'] = $request->boolean('notif_email');
+        $d['es_piloto'] = $request->boolean('es_piloto');
         // Los permisos extra que ya trae el rol no se guardan aparte.
         $delRol = Role::findByName($d['rol'])->permissions->pluck('name')->all();
         $d['permisos_extra'] = array_values(array_diff($d['permisos_extra'] ?? [], $delRol));

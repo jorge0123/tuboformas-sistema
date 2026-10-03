@@ -48,7 +48,7 @@
                     <td><x-herramienta.estado :estado="$h->estado" /></td>
                     <td>
                         @if ($h->asignadaA)
-                            <span class="flex items-center gap-2"><span class="grid size-7 place-items-center rounded-full bg-carbon-100 text-[10px] font-bold">{{ $h->asignadaA->iniciales() }}</span>{{ $h->asignadaA->name }}</span>
+                            <span class="flex items-center gap-2"><span class="grid size-7 place-items-center rounded-full bg-carbon-100 text-[10px] font-bold">{{ $h->asignadaA->iniciales() }}</span><span class="truncate">{{ $h->asignadaA->name }}</span></span>
                         @else <span class="text-carbon-400">Bodega de herramientas</span> @endif
                     </td>
                     <td class="text-right"><x-icono n="derecha" clase="size-4 text-carbon-300" /></td>

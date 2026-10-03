@@ -6,11 +6,11 @@
 
 {{-- Encabezado --}}
 <div class="tarjeta overflow-hidden">
-    <div class="flex flex-col gap-5 p-5 md:flex-row md:items-center">
+    <div class="flex flex-col gap-4 p-4 max-md:block max-md:space-y-4 max-md:after:clear-both max-md:after:table md:flex-row md:items-center md:gap-5 md:p-5">
         @if ($maquina->foto)
-            <img src="{{ Storage::url($maquina->foto) }}" alt="" class="size-24 shrink-0 rounded-xl object-cover ring-1 ring-carbon-200">
+            <img src="{{ Storage::url($maquina->foto) }}" alt="" class="size-16 shrink-0 rounded-xl object-cover ring-1 ring-carbon-200 max-md:float-left max-md:mr-4 md:size-24">
         @else
-            <span class="grid size-24 shrink-0 place-items-center rounded-xl bg-carbon-100 text-carbon-400"><x-icono n="maquina" clase="size-10" /></span>
+            <span class="grid size-16 shrink-0 place-items-center rounded-xl bg-carbon-100 text-carbon-400 max-md:float-left max-md:mr-4 md:size-24"><x-icono n="maquina" clase="size-8 md:size-10" /></span>
         @endif
         <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">
@@ -18,7 +18,7 @@
                 <x-maquina.estado :estado="$maquina->estado" />
                 <span class="insignia-gris">Criticidad {{ $maquina->criticidad }}</span>
             </div>
-            <h2 class="mt-2 font-display text-2xl font-extrabold tracking-tight">{{ $maquina->nombre }}</h2>
+            <h2 class="mt-2 font-display text-xl font-extrabold tracking-tight md:text-2xl">{{ $maquina->nombre }}</h2>
             <p class="mt-1 text-sm text-carbon-500">
                 {{ $maquina->area?->nombre ?? 'Sin área' }}
                 @if ($maquina->marca) · {{ $maquina->marca }} @endif
@@ -131,7 +131,7 @@
     <div class="tarjeta">
         <div class="tarjeta-cabeza">
             <h3 class="tarjeta-titulo">Registro de mantenimiento</h3>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 @can('reportes.exportar')<a href="{{ route('bitacora.exportar', ['maquina' => $maquina->id]) }}" class="btn-secundario btn-sm"><x-icono n="descargar" clase="size-4" /> Excel</a>@endcan
                 @can('bitacora.crear')<a href="{{ route('bitacora.create', ['maquina' => $maquina->id]) }}" class="btn-oscuro btn-sm"><x-icono n="mas" clase="size-4" /> Registrar</a>@endcan
             </div>

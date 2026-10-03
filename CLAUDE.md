@@ -11,6 +11,7 @@ La lógica del negocio, los roles y las reglas están en `docs/DISENO.md`: léel
 - Laragon (MySQL root sin contraseña, base `tuboformas`).
 - `php artisan serve --port=8090` (el 8000 lo usan otros proyectos). Correo: Mailpit en http://127.0.0.1:8025.
 - Datos de ejemplo: `php artisan migrate:fresh --seed` (en local carga `DemoSeeder`). Usuarios de ejemplo: `admin`, `gmantto`, `amantto`, `selvin` (técnico), `abodega`, `auxbodega`, `contador`, `gerente`… contraseña `Tuboformas2026!`.
+- Más volumen de datos (máquinas, fichas, catálogo PVC con colores, movimientos, OT): `php artisan db:seed --class=DemoAmpliadoSeeder` (ya se incluye en `migrate:fresh --seed` en local).
 
 ## Convenciones
 - Todo en español: código de dominio (modelos, columnas, rutas), textos de interfaz y comentarios.

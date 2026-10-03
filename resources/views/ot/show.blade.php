@@ -12,7 +12,7 @@
                 <span class="insignia-gris">{{ \App\Models\OrdenTrabajo::TIPOS[$ot->tipo] }}</span>
                 <x-ot.prioridad :prioridad="$ot->prioridad" class="ml-1" />
             </div>
-            <h2 class="mt-2 font-display text-2xl font-extrabold tracking-tight">{{ $ot->titulo }}</h2>
+            <h2 class="mt-2 font-display text-xl leading-tight font-extrabold tracking-tight sm:text-2xl">{{ $ot->titulo }}</h2>
             @if ($ot->maquina)
                 <a href="{{ route('maquinas.show', $ot->maquina) }}" class="mt-1.5 inline-flex items-center gap-1.5 text-sm font-semibold text-marca-700 hover:underline">
                     <x-icono n="maquina" clase="size-4" />{{ $ot->maquina->etiqueta() }}<span class="font-normal text-carbon-500">· {{ $ot->maquina->area?->nombre }}</span>
@@ -23,7 +23,7 @@
         </div>
         <div class="flex flex-wrap gap-2">
             @if ($permisos['ejecutar'] && $ot->estaAbierta())
-                <button class="btn-exito" @click="$dispatch('abrir-modal', 'completar')"><x-icono n="check-circulo" clase="size-4" /> Completar orden</button>
+                <button class="btn-exito max-sm:h-11 max-sm:w-full" @click="$dispatch('abrir-modal', 'completar')"><x-icono n="check-circulo" clase="size-4" /> Completar orden</button>
             @endif
             @if ($permisos['editar'])
                 <a href="{{ route('ot.edit', $ot) }}" class="btn-secundario"><x-icono n="lapiz" clase="size-4" /> Editar</a>
@@ -33,6 +33,17 @@
             @endif
         </div>
     </div>
+    {{-- En celular lo esencial queda arriba: quién la tiene y cuándo vence (el detalle completo está al final). --}}
+    <dl class="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-carbon-50 p-3 text-sm ring-1 ring-carbon-100 xl:hidden">
+        <div class="min-w-0">
+            <dt class="text-[11px] font-semibold tracking-wide text-carbon-400 uppercase">Responsable</dt>
+            <dd class="truncate font-semibold text-carbon-900">{{ $ot->responsable?->name ?? 'Sin asignar' }}</dd>
+        </div>
+        <div class="min-w-0">
+            <dt class="text-[11px] font-semibold tracking-wide text-carbon-400 uppercase">Vence</dt>
+            <dd class="font-semibold {{ in_array($ot->situacion(), ['atrasada', 'completada_tarde']) ? 'text-marca-700' : 'text-carbon-900' }}">{{ $ot->fecha_vencimiento?->translatedFormat('d M Y') ?? 'Sin fecha' }}</dd>
+        </div>
+    </dl>
     <div class="mt-5">
         <div class="mb-1.5 flex items-center justify-between text-sm">
             <span class="font-medium text-carbon-600">Avance</span>
@@ -210,7 +221,7 @@
                     <dt class="text-carbon-500">Responsable</dt>
                     <dd class="flex items-center gap-2 font-semibold">
                         @if ($ot->responsable)
-                            <span class="grid size-7 place-items-center rounded-full bg-marca-600 text-[10px] font-bold text-white">{{ $ot->responsable->iniciales() }}</span>{{ $ot->responsable->name }}
+                            <span class="grid size-7 place-items-center rounded-full bg-marca-600 text-[10px] font-bold text-white">{{ $ot->responsable->iniciales() }}</span><span class="truncate">{{ $ot->responsable->name }}</span>
                         @else
                             <span class="insignia-ambar">Sin asignar</span>
                         @endif

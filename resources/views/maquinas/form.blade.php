@@ -128,7 +128,7 @@
                 @endcan
             @endif
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
             <a href="{{ $maquina->exists ? route('maquinas.show', $maquina) : route('maquinas.index') }}" class="btn-secundario">Cancelar</a>
             <button class="btn-primario"><x-icono n="check" clase="size-4" /> Guardar máquina</button>
         </div>

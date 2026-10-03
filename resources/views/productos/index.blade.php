@@ -1,5 +1,5 @@
 <x-layouts.app titulo="Inventario">
-<div class="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+<div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 [&>:last-child:nth-child(odd)]:col-span-2 sm:[&>:last-child:nth-child(odd)]:col-span-1">
     <x-kpi titulo="Productos" :valor="$total" icono="cajas" />
     <x-kpi titulo="Bajo el mínimo" :valor="$bajos" icono="alerta" tono="rojo" :href="route('productos.index', ['bajo_minimo' => 1])" />
     @if ($valor !== null)
@@ -25,7 +25,7 @@
         </select>
         @if (request('bajo_minimo'))<input type="hidden" name="bajo_minimo" value="1"><span class="insignia-roja">Bajo el mínimo</span>@endif
     </x-filtros>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
         @can('reportes.exportar')<a href="{{ route('productos.exportar', request()->query()) }}" class="btn-secundario"><x-icono n="descargar" clase="size-4" /> Excel</a>@endcan
         @can('inventario.gestionar')<a href="{{ route('productos.create') }}" class="btn-secundario"><x-icono n="mas" clase="size-4" /> Producto</a>@endcan
         @can('movimientos.crear')<a href="{{ route('movimientos.create') }}" class="btn-primario"><x-icono n="flechas" clase="size-4" /> Registrar movimiento</a>@endcan
@@ -41,7 +41,7 @@
             <thead>
                 <tr>
                     <th>Producto</th><th>Tipo</th>
-                    @foreach ($bodegas as $b)<th class="text-right">{{ $b->codigo }}</th>@endforeach
+                    @foreach ($bodegas as $b)<th class="text-right" data-movil="ocultar">{{ $b->codigo }}</th>@endforeach
                     <th class="text-right">Total</th><th class="text-right">Mínimo</th>
                     @can('inventario.ver_costos')<th class="text-right">Valor</th>@endcan
                 </tr>

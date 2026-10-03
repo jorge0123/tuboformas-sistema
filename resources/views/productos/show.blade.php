@@ -18,10 +18,11 @@
                 @unless ($producto->activo)<span class="insignia-roja">Inactivo</span>@endunless
             </div>
             <h2 class="mt-2 font-display text-2xl font-extrabold">{{ $producto->nombre }}</h2>
-            <p class="text-sm text-carbon-500">{{ $producto->medida ? 'Medida '.$producto->medida.' · ' : '' }}Unidad: {{ $producto->unidad->nombre }}{{ $producto->ubicacion ? ' · Ubicación '.$producto->ubicacion : '' }}</p>
+            <p class="text-sm text-carbon-500">{{ $producto->medida ? 'Medida '.$producto->medida.' · ' : '' }}{{ $producto->color ? 'Color '.$producto->color.' · ' : '' }}Unidad: {{ $producto->unidad->nombre }}{{ $producto->ubicacion ? ' · Ubicación '.$producto->ubicacion : '' }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
             @can('movimientos.crear')<a href="{{ route('movimientos.create', ['producto' => $producto->id]) }}" class="btn-primario"><x-icono n="flechas" clase="size-4" /> Movimiento</a>@endcan
+            @canany(['inventario.gestionar', 'movimientos.crear'])<a href="{{ route('bodega.etiquetas', ['producto' => $producto->id]) }}" class="btn-secundario"><x-icono n="qr" clase="size-4" /> Etiquetas QR</a>@endcanany
             @can('inventario.gestionar')<a href="{{ route('productos.edit', $producto) }}" class="btn-secundario"><x-icono n="lapiz" clase="size-4" /> Editar</a>@endcan
         </div>
     </div>

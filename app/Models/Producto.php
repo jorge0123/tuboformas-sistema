@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Producto extends Model
 {
     protected $fillable = [
-        'codigo', 'nombre', 'tipo', 'categoria_id', 'medida', 'unidad_id', 'stock_minimo',
+        'codigo', 'nombre', 'tipo', 'categoria_id', 'medida', 'color', 'unidad_id', 'stock_minimo',
         'costo_promedio', 'ubicacion', 'foto', 'descripcion', 'activo',
     ];
 
@@ -73,7 +73,13 @@ class Producto extends Model
 
     public function etiqueta(): string
     {
-        return $this->codigo.' · '.$this->nombre;
+        return $this->codigo.' · '.$this->nombre.($this->color ? ' '.$this->color : '');
+    }
+
+    /** Texto del QR de la etiqueta: TF:<código>:<id de presentación, 0 = unidad base>. */
+    public function textoQr(?ProductoPresentacion $pres = null): string
+    {
+        return 'TF:'.$this->codigo.':'.($pres?->id ?? 0);
     }
 
     public function scopeBuscar($q, ?string $texto)

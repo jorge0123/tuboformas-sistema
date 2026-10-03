@@ -136,6 +136,10 @@ class HerramientaController extends Controller
             ]);
         });
         Auditoria::registrar('recibir', $herramienta, 'Devuelta: '.Herramienta::CONDICIONES[$d['estado_devolucion']]);
+        if ($asig->user_id !== $request->user()->id) {
+            $asig->user->notify(new Aviso('Herramienta recibida', "{$herramienta->codigo} · {$herramienta->nombre} ya no está a tu cargo (devuelta: "
+                .mb_strtolower(Herramienta::CONDICIONES[$d['estado_devolucion']]).').', route('herramientas.mias')));
+        }
 
         return back()->with('ok', 'Herramienta recibida.');
     }

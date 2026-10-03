@@ -42,7 +42,7 @@
 
     <div class="flex items-center justify-between">
         <div>@if ($rol->exists && ! $rol->es_sistema)<button type="submit" form="eliminar" class="btn-peligro"><x-icono n="basura" clase="size-4" /> Eliminar rol</button>@endif</div>
-        <div class="flex gap-2"><a href="{{ route('roles.index') }}" class="btn-secundario">Cancelar</a><button class="btn-primario"><x-icono n="check" clase="size-4" /> Guardar rol</button></div>
+        <div class="flex flex-wrap gap-2"><a href="{{ route('roles.index') }}" class="btn-secundario">Cancelar</a><button class="btn-primario"><x-icono n="check" clase="size-4" /> Guardar rol</button></div>
     </div>
 </form>
 @if ($rol->exists && ! $rol->es_sistema)

@@ -105,6 +105,17 @@ Sigue el flujo de la planta: compra de materia prima → ingreso a bodega → sa
   | Traslado entre bodegas | salida de una, entrada a otra |
   | Ajuste de entrada / salida | requiere aprobación |
 
+- **Variantes de color**: el mismo producto en otro color (Copla 3/4" gris / naranja) es otro
+  producto con el mismo nombre, su propio código y el campo `color`. Cada uno lleva su existencia.
+- **Etiquetas QR** (Bodega → Etiquetas QR): se arma una hoja eligiendo producto, presentación y
+  número de copias (ej. 20 × Copla 3/4" gris, Bolsa x 300) y se imprime para pegar en bolsas o cajas.
+  El QR contiene `TF:<código>:<id de presentación>` (0 = unidad base). La etiqueta **personalizada**
+  ("Bolsa x 4 pza") agrega las unidades: `TF:<código>:0:<unidades>`, y al escanearla se proponen esas unidades.
+- **Ingreso rápido** (Bodega → Ingreso rápido, permiso `movimientos.crear`: auxiliar, administrador
+  y gerente de bodega): pantalla para celular. Se escanea el QR con la cámara (requiere https) o con
+  una foto (funciona también en http); el sistema propone "¿Registrar Copla 3/4" gris, 300 pza?",
+  se puede cambiar color, presentación o cantidad, y al final se registra un solo
+  `ingreso_produccion` con todas las líneas. Las líneas sin registrar se guardan en el navegador.
 - No se permite dejar existencias negativas.
 - Costo promedio ponderado: se recalcula en cada recepción con costo.
 - Un movimiento confirmado no se edita ni se borra: se **anula**, y eso crea un movimiento
@@ -126,6 +137,39 @@ Sigue el flujo de la planta: compra de materia prima → ingreso a bodega → sa
 ### 2.9 Administración
 Usuarios, roles y permisos, catálogos (áreas, especialidades, bodegas, categorías, unidades)
 y bitácora de auditoría (quién hizo qué y cuándo).
+
+### 2.8 Pedidos de clientes (órdenes de entrega)
+Ventas (vendedor, secretaria o contador) ingresa el pedido; bodega lo arma y lo despacha.
+- **Clientes**: nombre, NIT, contacto, teléfono, dirección, municipio. Se pueden dar de alta sin salir del pedido.
+- **Pedido** (`PED-000123`): cliente, fecha de entrega y jornada, tipo de entrega (`ruta`: con nuestro camión; `recoge`: el cliente pasa a la planta; `transporte`: por paquetería
+  —Cargo Expreso, Guatex…— con número de guía, para clientes lejos),
+  prioridad (normal/urgente), dirección y quién recibe (se llenan con los del cliente), orden de compra,
+  condición de pago, indicaciones para bodega, bodega de salida y productos (en su presentación: 2 Bolsa x 300).
+- **Estados**: `nuevo` → `preparando` → `listo` → `en_ruta` → `entregado`; `cancelado`.
+  Quien recoge en planta pasa de `listo` a `entregado`.
+  - Al crearlo se avisa a todo bodega (`pedidos.preparar`). Quien lo toma queda como responsable.
+  - En preparación se marca cada producto al armarlo; si no alcanzó se indica cuánto se armó.
+    "Listo" exige todas las líneas marcadas.
+  - **El inventario se descuenta al despachar** (o al entregar si lo recoge el cliente) con un
+    `salida_despacho` ligado al pedido, por lo que realmente se armó. Si no hay existencia, no se despacha.
+  - **Despacho**: en ruta propia se elige el vehículo (Máquinas del área *Vehículos*) y el piloto (usuario
+    marcado como *Es piloto*); por transporte, la empresa y el número de guía. El piloto recibe el aviso
+    "Tienes una entrega" y confirma la entrega desde su teléfono. No se pide factura: el despacho queda
+    referenciado con la guía, la OC del cliente o el folio del pedido.
+  - Avisos: nuevo/modificado/cancelado sin tomar → bodega; tomado, en ruta → ventas; listo → ventas y bodega;
+    despachado → piloto; **entregado → ventas, quien armó, quien despachó y el piloto**; comentarios → todos
+    los involucrados. Nunca se avisa a quien hizo la acción.
+  - El vendedor recibe aviso en cada paso. Solo se edita mientras está `nuevo`; se cancela hasta `listo`
+    (después, se anula el despacho en Movimientos).
+- **Viajes de entrega** (`VIA-00001`): un camión y su piloto llevan varios pedidos en orden de paradas.
+  Se arman con los pedidos listos de ruta (agrupados por municipio) y al salir se despachan todos juntos;
+  si a uno no le alcanza la existencia, no sale ninguno. Un camión o piloto con viaje en ruta no puede salir
+  en otro. El piloto recibe un solo aviso, ve las paradas con "Cómo llegar"/"Llamar" y la ruta completa en
+  Google Maps, y marca cada parada como entregada o **no entregada** (el pedido regresa a bodega: se anula su
+  salida y queda "listo"). El viaje se cierra solo con la última parada y avisa a bodega con el resumen.
+  Lógica en `App\Services\ViajeService`.
+- Lógica en `App\Services\PedidoService`. Rol **Ventas**: `pedidos.ver`, `pedidos.crear`, `clientes.gestionar`.
+  Ventas ve sus pedidos; bodega y quien tenga `pedidos.ver_todos` ve todos.
 
 ## 3. Roles y permisos
 
@@ -151,6 +195,7 @@ refrigeración, no hace falta un rol nuevo.
 | Gerente de bodega | Jefe de bodega | Todo bodega e inventario, costos, aprueba y anula, reportes |
 | Administrador de bodega | Encargado de bodega | Productos, movimientos, conteos, aprueba ajustes |
 | Auxiliar de bodega | Personal de bodega | Registra entradas, salidas y conteos con foto; no aprueba ni anula |
+| Ventas | Vendedores, secretaría | Ingresa pedidos de clientes y clientes nuevos; sigue la preparación y entrega de **sus** pedidos |
 | Supervisor de producción | Piso de planta | Ve máquinas e inventario, reporta fallas (crea OT) y sigue su estado |
 | Contador | Contabilidad | Solo lectura: inventario valorizado, movimientos, costos de mantenimiento, reportes y exportación |
 | Consulta | Cualquiera de solo lectura | Ve todo lo operativo; sin costos ni administración |
@@ -172,6 +217,23 @@ Reglas que no dependen de la matriz:
 - Archivos (fotos, manuales) en `storage/app/public`, servidos con `php artisan storage:link`.
   Las fotos se comprimen en el navegador antes de subirse (las cámaras de celular generan archivos de 4 a 8 MB).
 - Paleta tomada de tuboformas.com: rojo `#D90016`, negro `#1F1F1F`, grises cálidos; tipografía Montserrat.
+- **Pantallas en vivo** (`resources/js/vivo.js`): los buscadores filtran mientras se escribe, y listas,
+  tablero, Kanban y detalles se actualizan solos cada 30 s sin recargar (morph de `<main data-vivo>`).
+  No se refresca si el usuario está escribiendo, tiene un formulario sin guardar, un diálogo abierto o
+  está arrastrando; los formularios de crear/editar y Bodega (ingreso rápido, etiquetas) no se refrescan.
+- **Celular** (`resources/js/movil.js` + `resources/css/app.css`): todo el sistema se usa en el teléfono.
+  - Las `.tabla` se muestran como tarjetas debajo de 768 px (la primera celda es el título; el resto, en 2 o 3
+    columnas con su encabezado como etiqueta). `<th data-movil="ocultar">` quita una columna en celular;
+    `.tabla-fija` conserva la tabla.
+  - Barra inferior según el rol (`Menu::barraInferior`): bodega tiene "Escanear" al centro, mantenimiento
+    "Reportar". Las barras fijas de cada pantalla usan `.sobre-barra` para no quedar debajo.
+  - Los filtros de `<x-filtros>` se pliegan tras un botón "Filtros (n)". Los campos usan 16 px (sin zoom en iPhone).
+  - El calendario es una agenda por día; el mes queda como mapa con puntos.
+- **Notificaciones**: `App\Notifications\Aviso` escribe la campana al instante (conexión `sync`) y solo
+  el correo va en cola. La campana consulta cada 30 s, muestra un toast con enlace y el número en la pestaña.
+  Avisos: OT asignada, nueva sin responsable o crítica, avance, comentario, en espera (a coordinadores),
+  completada y cancelada; herramienta entregada y recibida; ajuste por aprobar, aprobado o rechazado;
+  movimiento anulado; stock bajo el mínimo; conteo abierto y aplicado.
 - Despliegue en cPanel: ver `docs/DESPLIEGUE.md`.
 
 ## 5. Pendiente / siguientes fases

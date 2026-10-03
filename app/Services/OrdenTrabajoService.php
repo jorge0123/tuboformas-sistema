@@ -10,6 +10,7 @@ use App\Models\PlanMantenimiento;
 use App\Models\User;
 use App\Notifications\Aviso;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -45,11 +46,12 @@ class OrdenTrabajoService
         Auditoria::registrar('crear', $ot, "{$ot->folio} · {$ot->titulo}");
         $this->avisarAsignacion($ot, $usuario);
 
-        // Reporte sin responsable (ej. falla reportada por producción): avisar a quien asigna.
-        if (! $ot->responsable_id) {
-            $coordinadores = User::activos()->permission('ot.asignar')->where('id', '!=', $usuario->id)->get();
-            \Illuminate\Support\Facades\Notification::send($coordinadores, new Aviso(
-                'Orden por asignar',
+        // Reporte sin responsable (ej. falla reportada por producción) o crítica: avisar a quien asigna.
+        if (! $ot->responsable_id || $ot->prioridad === 'critica') {
+            $coordinadores = User::activos()->permission('ot.asignar')->where('id', '!=', $usuario->id)
+                ->where('id', '!=', $ot->responsable_id ?? 0)->get();
+            Notification::send($coordinadores, new Aviso(
+                $ot->responsable_id ? 'Orden crítica' : 'Orden por asignar',
                 "{$ot->folio} · {$ot->titulo}".($ot->maquina ? " ({$ot->maquina->etiqueta()})" : '')." — reportada por {$usuario->name}",
                 route('ot.show', $ot)
             ));
@@ -65,10 +67,12 @@ class OrdenTrabajoService
             $ayudantes = $datos['ayudantes'] ?? null;
             unset($datos['ayudantes']);
             $ot->update($datos);
+            // El responsable cargado en memoria es el anterior: se vuelve a leer para avisar al nuevo.
+            $ot->unsetRelation('responsable');
             if ($ayudantes !== null) {
                 $ot->ayudantes()->sync($ayudantes);
             }
-            if ($ot->responsable_id !== $responsableAntes) {
+            if ((int) $ot->responsable_id !== (int) $responsableAntes) {
                 $ot->seguimientos()->create([
                     'user_id' => $usuario->id,
                     'tipo' => 'asignacion',
@@ -77,7 +81,8 @@ class OrdenTrabajoService
             }
         });
         Auditoria::registrar('editar', $ot, $ot->folio);
-        if ($ot->responsable_id !== $responsableAntes) {
+        // El formulario manda el id como texto: se compara como número para no avisar sin cambio real.
+        if ((int) $ot->responsable_id !== (int) $responsableAntes) {
             $this->avisarAsignacion($ot, $usuario);
         }
     }
@@ -122,6 +127,15 @@ class OrdenTrabajoService
         });
 
         $this->avisarInteresados($ot, $usuario, 'Avance en '.$ot->folio, "{$usuario->name}: {$ot->progreso}% · ".OrdenTrabajo::ESTADOS[$ot->estado]);
+
+        // Una OT detenida casi siempre necesita a quien coordina (comprar un repuesto, pedir cotización…).
+        if ($ot->estado === 'en_espera' && $ot->wasChanged('estado')) {
+            $ya = collect([$ot->responsable_id, $ot->solicitante_id, $usuario->id])->merge($ot->ayudantes->pluck('id'));
+            Notification::send(
+                User::activos()->permission('ot.asignar')->whereNotIn('id', $ya->filter())->get(),
+                new Aviso("{$ot->folio} en espera", "{$ot->titulo}: {$ot->motivo_espera}", route('ot.show', $ot))
+            );
+        }
     }
 
     public function comentar(OrdenTrabajo $ot, string $texto, User $usuario): void
@@ -199,6 +213,7 @@ class OrdenTrabajoService
             $this->marcarMaquina($ot);
         });
         Auditoria::registrar('cancelar', $ot, "{$ot->folio}: $motivo");
+        $this->avisarInteresados($ot, $usuario, "{$ot->folio} cancelada", "{$ot->titulo} — $motivo");
     }
 
     /** Movimiento en el Kanban (arrastrar tarjeta). Completar/cancelar tienen su propio flujo. */
@@ -255,7 +270,7 @@ class OrdenTrabajoService
 
     private function avisarAsignacion(OrdenTrabajo $ot, User $autor): void
     {
-        if ($ot->responsable_id && $ot->responsable_id !== $autor->id) {
+        if ($ot->responsable_id && (int) $ot->responsable_id !== (int) $autor->id) {
             $ot->responsable->notify(new Aviso(
                 'Nueva orden asignada',
                 "{$ot->folio} · {$ot->titulo}".($ot->fecha_vencimiento ? ' · vence '.$ot->fecha_vencimiento->format('d/m/Y') : ''),
@@ -268,7 +283,7 @@ class OrdenTrabajoService
     {
         $ot->loadMissing('ayudantes');
         $ids = collect([$ot->responsable_id, $ot->solicitante_id])->merge($ot->ayudantes->pluck('id'))
-            ->filter()->unique()->reject(fn ($id) => $id === $autor->id);
+            ->filter()->map(fn ($id) => (int) $id)->unique()->reject(fn ($id) => $id === (int) $autor->id);
         foreach (User::whereIn('id', $ids)->activos()->get() as $u) {
             $u->notify(new Aviso($titulo, $mensaje, route('ot.show', $ot)));
         }

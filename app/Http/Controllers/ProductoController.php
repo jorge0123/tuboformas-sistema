@@ -172,6 +172,7 @@ class ProductoController extends Controller
             'tipo' => ['required', Rule::in(array_keys(Producto::TIPOS))],
             'categoria_id' => ['nullable', 'exists:categorias_producto,id'],
             'medida' => ['nullable', 'string', 'max:50'],
+            'color' => ['nullable', 'string', 'max:40'],
             'unidad_id' => ['required', 'exists:unidades,id'],
             'stock_minimo' => ['nullable', 'numeric', 'min:0'],
             'costo_promedio' => ['nullable', 'numeric', 'min:0'],

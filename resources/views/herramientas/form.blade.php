@@ -30,7 +30,7 @@
     </section>
     <div class="flex items-center justify-between">
         <div>@if ($h->exists)<button type="submit" form="eliminar" class="btn-peligro"><x-icono n="basura" clase="size-4" /> Eliminar</button>@endif</div>
-        <div class="flex gap-2"><a href="{{ $h->exists ? route('herramientas.show', $h) : route('herramientas.index') }}" class="btn-secundario">Cancelar</a><button class="btn-primario"><x-icono n="check" clase="size-4" /> Guardar</button></div>
+        <div class="flex flex-wrap gap-2"><a href="{{ $h->exists ? route('herramientas.show', $h) : route('herramientas.index') }}" class="btn-secundario">Cancelar</a><button class="btn-primario"><x-icono n="check" clase="size-4" /> Guardar</button></div>
     </div>
 </form>
 @if ($h->exists)

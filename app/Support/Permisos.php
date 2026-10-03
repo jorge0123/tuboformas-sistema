@@ -72,6 +72,14 @@ class Permisos
                 'conteos.registrar' => 'Capturar cantidades contadas',
                 'conteos.gestionar' => 'Abrir, aplicar y cancelar conteos',
             ]],
+            'pedidos' => ['Pedidos de clientes', [
+                'pedidos.ver' => 'Ver sus pedidos',
+                'pedidos.ver_todos' => 'Ver todos los pedidos',
+                'pedidos.crear' => 'Ingresar pedidos de clientes',
+                'pedidos.preparar' => 'Armar y despachar pedidos (bodega)',
+                'pedidos.gestionar' => 'Editar y cancelar cualquier pedido',
+                'clientes.gestionar' => 'Crear y editar clientes',
+            ]],
             'reportes' => ['Reportes', [
                 'reportes.mantenimiento' => 'Reportes de mantenimiento',
                 'reportes.bodega' => 'Reportes de bodega',
@@ -109,6 +117,7 @@ class Permisos
         $lecturaOperativa = [
             'dashboard.ver', 'maquinas.ver', 'ot.ver_todas', 'bitacora.ver', 'planes.ver',
             'herramientas.ver', 'proveedores.ver', 'inventario.ver', 'movimientos.ver', 'conteos.ver',
+            'pedidos.ver', 'pedidos.ver_todos',
         ];
 
         return [
@@ -119,7 +128,7 @@ class Permisos
             'gerente_general' => ['Gerente general',
                 'Ve todo, reportes y costos, aprueba ajustes. No configura el sistema.',
                 array_merge($lecturaOperativa, [
-                    'ot.crear', 'inventario.ver_costos', 'movimientos.aprobar',
+                    'ot.crear', 'inventario.ver_costos', 'movimientos.aprobar', 'pedidos.ver', 'pedidos.ver_todos',
                     'reportes.mantenimiento', 'reportes.bodega', 'reportes.exportar',
                     'usuarios.ver', 'auditoria.ver',
                 ])],
@@ -147,7 +156,7 @@ class Permisos
             'gerente_bodega' => ['Gerente de bodega',
                 'Todo bodega e inventario, costos, aprobaciones y reportes.',
                 array_merge(
-                    self::delModulo(['inventario', 'movimientos', 'conteos', 'proveedores']),
+                    self::delModulo(['inventario', 'movimientos', 'conteos', 'proveedores', 'pedidos']),
                     ['dashboard.ver', 'reportes.bodega', 'reportes.exportar', 'usuarios.ver']
                 )],
             'admin_bodega' => ['Administrador de bodega',
@@ -155,11 +164,15 @@ class Permisos
                 ['dashboard.ver', 'inventario.ver', 'inventario.ver_costos', 'inventario.gestionar',
                     'movimientos.ver', 'movimientos.crear', 'movimientos.aprobar',
                     'conteos.ver', 'conteos.registrar', 'conteos.gestionar',
-                    'proveedores.ver', 'proveedores.gestionar', 'reportes.bodega', 'reportes.exportar']],
+                    'proveedores.ver', 'proveedores.gestionar', 'reportes.bodega', 'reportes.exportar',
+                    'pedidos.ver', 'pedidos.ver_todos', 'pedidos.preparar', 'pedidos.gestionar']],
             'aux_bodega' => ['Auxiliar de bodega',
                 'Registra entradas, salidas y conteos con foto. No aprueba ni anula.',
                 ['dashboard.ver', 'inventario.ver', 'movimientos.ver', 'movimientos.crear',
-                    'conteos.ver', 'conteos.registrar', 'proveedores.ver']],
+                    'conteos.ver', 'conteos.registrar', 'proveedores.ver', 'pedidos.ver', 'pedidos.preparar']],
+            'ventas' => ['Ventas',
+                'Vendedores y secretaría: ingresan pedidos de clientes y siguen su preparación y entrega.',
+                ['dashboard.ver', 'inventario.ver', 'pedidos.ver', 'pedidos.crear', 'clientes.gestionar']],
             'supervisor_produccion' => ['Supervisor de producción',
                 'Reporta fallas de máquinas, sigue su estado y consulta inventario.',
                 ['dashboard.ver', 'maquinas.ver', 'ot.ver_propias', 'ot.crear', 'bitacora.ver',
@@ -168,7 +181,8 @@ class Permisos
                 'Solo lectura: inventario valorizado, movimientos, costos y reportes con exportación.',
                 ['dashboard.ver', 'inventario.ver', 'inventario.ver_costos', 'movimientos.ver',
                     'conteos.ver', 'proveedores.ver', 'bitacora.ver',
-                    'reportes.bodega', 'reportes.mantenimiento', 'reportes.exportar']],
+                    'reportes.bodega', 'reportes.mantenimiento', 'reportes.exportar',
+                    'pedidos.ver', 'pedidos.ver_todos', 'pedidos.crear']],
             'consulta' => ['Consulta',
                 'Solo lectura de la operación, sin costos ni administración.', $lecturaOperativa],
             'personalizado' => ['Personalizado',

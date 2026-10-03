@@ -11,6 +11,9 @@
         <h2 class="font-display text-2xl font-extrabold tracking-tight text-carbon-900">{{ $saludo }}, {{ strtok($u->name, ' ') }}</h2>
     </div>
     <div class="flex flex-wrap gap-2">
+        @can('pedidos.crear')
+            <a href="{{ route('pedidos.create') }}" class="{{ $u->can('ot.crear') ? 'btn-secundario' : 'btn-primario' }}"><x-icono n="camion" clase="size-4" /> Nuevo pedido</a>
+        @endcan
         @can('ot.crear')
             <a href="{{ route('ot.create') }}" class="btn-primario"><x-icono n="mas" clase="size-4" /> Nueva orden de trabajo</a>
         @endcan
@@ -22,7 +25,7 @@
 
 {{-- Indicadores --}}
 @isset($d['ot'])
-<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+<div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
     <x-kpi titulo="Órdenes abiertas" :valor="$d['ot']['abiertas']" icono="portapapeles" :href="route('ot.index')" />
     <x-kpi titulo="Atrasadas" :valor="$d['ot']['atrasadas']" icono="alerta" tono="rojo" :href="route('ot.index', ['situacion' => 'atrasada'])" nota="Vencieron sin completarse" />
     <x-kpi titulo="Por vencer (2 días)" :valor="$d['ot']['por_vencer']" icono="reloj" tono="ambar" :href="route('ot.index', ['situacion' => 'por_vencer'])" />
@@ -30,8 +33,47 @@
 </div>
 @endisset
 
+{{-- Pedidos: bodega ve lo que debe armar/despachar; ventas, cómo van los suyos --}}
+@isset($d['pedidos'])
+<div class="{{ isset($d['ot']) ? 'mt-4' : '' }} grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+    <x-kpi titulo="Pedidos por armar" :valor="$d['pedidos']['nuevo']" icono="campana" tono="azul" :href="route('pedidos.index', ['ver' => 'nuevo'])" />
+    <x-kpi titulo="Armando" :valor="$d['pedidos']['preparando']" icono="cajas" :href="route('pedidos.index', ['ver' => 'preparando'])" />
+    <x-kpi titulo="Listos para salir" :valor="$d['pedidos']['listo']" icono="check-circulo" tono="verde" :href="route('pedidos.index', ['ver' => 'listo'])" />
+    <x-kpi titulo="En ruta" :valor="$d['pedidos']['en_ruta']" icono="camion" tono="ambar" :href="route('pedidos.index', ['ver' => 'en_ruta'])"
+           :nota="$d['pedidos']['atrasados'] ? $d['pedidos']['atrasados'].' atrasados' : null" />
+</div>
+@endisset
+
 <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
     <div class="space-y-6 xl:col-span-2">
+        @if (isset($d['pedidos_proximos']))
+        <section class="tarjeta">
+            <div class="tarjeta-cabeza">
+                <div><h3 class="tarjeta-titulo">Pedidos para hoy y mañana</h3><p class="text-xs text-carbon-500">Incluye los atrasados; lo urgente primero</p></div>
+                <a href="{{ route('pedidos.index') }}" class="text-sm font-semibold text-marca-700 hover:underline">Ver todos</a>
+            </div>
+            @forelse ($d['pedidos_proximos'] as $p)
+                @php $dias = today()->diffInDays($p->fecha_entrega, false); @endphp
+                <a href="{{ route('pedidos.show', $p) }}" class="flex items-center gap-3 border-b border-carbon-50 px-4 py-3 transition last:border-0 hover:bg-carbon-50 sm:px-5">
+                    <span class="grid w-12 shrink-0 place-items-center rounded-lg py-1 text-center leading-tight {{ $dias < 0 ? 'bg-marca-50 text-marca-700' : ($dias == 0 ? 'bg-amber-50 text-amber-800' : 'bg-carbon-100 text-carbon-600') }}">
+                        <span class="text-[10px] font-bold uppercase">{{ $dias < 0 ? 'Atras.' : ($dias == 0 ? 'Hoy' : 'Mañana') }}</span>
+                        <span class="text-sm font-extrabold">{{ $p->fecha_entrega->format('d') }}</span>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="flex items-center gap-1.5 truncate text-sm font-semibold">@if ($p->prioridad === 'urgente')<x-icono n="rayo" clase="size-3.5 shrink-0 text-marca-600" />@endif<span class="truncate">{{ $p->cliente->nombre }}</span></p>
+                        <p class="truncate text-xs text-carbon-500"><span class="font-mono">{{ $p->folio }}</span> · {{ $p->lineas_count }} productos{{ $p->preparador ? ' · '.$p->preparador->name : '' }}</p>
+                    </div>
+                    <div class="flex shrink-0 flex-col items-end gap-1">
+                        <x-pedido.estado :estado="$p->estado" />
+                        @if (in_array($p->estado, ['nuevo', 'preparando']))<span class="text-[11px] tabular-nums text-carbon-500">{{ $p->armadas }}/{{ $p->lineas_count }} armados</span>@endif
+                    </div>
+                </a>
+            @empty
+                <x-vacio icono="camion" titulo="Nada pendiente para hoy ni mañana" texto="" />
+            @endforelse
+        </section>
+        @endif
+
         {{-- Mis órdenes (técnicos y quien tenga OT asignadas) --}}
         @if (isset($d['mis_ot']) && ($d['mis_ot']->isNotEmpty() || ! $u->can('ot.ver_todas')))
         <section class="tarjeta">

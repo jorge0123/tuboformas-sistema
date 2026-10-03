@@ -33,6 +33,15 @@ class Aviso extends Notification implements ShouldQueue
         return $canales;
     }
 
+    /**
+     * La campana se escribe al instante (sync) para que se vea en la siguiente consulta;
+     * solo el correo espera en la cola.
+     */
+    public function viaConnections(): array
+    {
+        return ['database' => 'sync'];
+    }
+
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
