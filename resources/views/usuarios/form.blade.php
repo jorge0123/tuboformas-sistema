@@ -26,6 +26,9 @@
                 <x-campo nombre="especialidad_id" etiqueta="Especialidad" ayuda="Para técnicos: mecánico, eléctrico… Sirve para asignar y filtrar órdenes.">
                     <select id="especialidad_id" name="especialidad_id" class="campo"><option value="">Ninguna</option>@foreach ($especialidades as $e)<option value="{{ $e->id }}" @selected(old('especialidad_id', $u->especialidad_id) == $e->id)>{{ $e->nombre }}</option>@endforeach</select>
                 </x-campo>
+                <x-campo nombre="turno_id" etiqueta="Turno" ayuda="Con turno, la persona marca entrada y salida, y su tiempo en las órdenes se cuenta solo mientras está marcada.">
+                    <select id="turno_id" name="turno_id" class="campo"><option value="">Sin turno (no marca asistencia)</option>@foreach ($turnos as $t)<option value="{{ $t->id }}" @selected(old('turno_id', $u->turno_id) == $t->id)>{{ $t->nombre }} · {{ $t->horario() }} · {{ $t->textoDias() }}</option>@endforeach</select>
+                </x-campo>
             </div>
         </section>
         <section class="tarjeta">

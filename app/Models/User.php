@@ -15,7 +15,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'username', 'email', 'password', 'puesto', 'telefono',
-        'especialidad_id', 'activo', 'notif_email', 'ultimo_acceso_at',
+        'especialidad_id', 'turno_id', 'activo', 'notif_email', 'ultimo_acceso_at',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -34,6 +34,28 @@ class User extends Authenticatable
     public function especialidad()
     {
         return $this->belongsTo(Especialidad::class);
+    }
+
+    public function turno()
+    {
+        return $this->belongsTo(Turno::class);
+    }
+
+    public function asistencias()
+    {
+        return $this->hasMany(Asistencia::class);
+    }
+
+    /** Asistencia abierta (marcó entrada y todavía no la salida). */
+    public function asistenciaAbierta(): ?Asistencia
+    {
+        return $this->asistencias()->abiertas()->latest('entrada_at')->first();
+    }
+
+    /** Quien tiene turno marca entrada y salida, y no registra trabajo en OT fuera de turno. */
+    public function marcaAsistencia(): bool
+    {
+        return $this->turno_id !== null;
     }
 
     public function herramientas()

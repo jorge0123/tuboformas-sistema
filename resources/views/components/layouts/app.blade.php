@@ -193,6 +193,31 @@
             </div>
         </div>
 
+        {{-- Marcar asistencia (quien tiene turno) --}}
+        @if ($usuario->marcaAsistencia())
+            @php $enTurno = $usuario->asistenciaAbierta(); @endphp
+            @if ($enTurno)
+                <div class="relative" x-data="{ abierto: false }" @click.outside="abierto = false">
+                    <button class="flex items-center gap-2 rounded-full bg-emerald-50 py-1.5 pr-3 pl-2 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200 transition hover:bg-emerald-100" @click="abierto = !abierto">
+                        <span class="relative size-2"><span class="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-60 [animation-duration:2.5s]"></span><span class="relative block size-2 rounded-full bg-emerald-500"></span></span>
+                        <span class="hidden sm:inline">En turno desde</span> {{ $enTurno->entrada_at->format('H:i') }}
+                    </button>
+                    <div x-show="abierto" x-cloak x-transition.origin.top.right class="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl bg-white p-4 shadow-xl ring-1 ring-carbon-200">
+                        <p class="text-sm font-semibold text-carbon-900">Entraste a las {{ $enTurno->entrada_at->format('H:i') }}</p>
+                        <p class="text-xs text-carbon-500">Llevas {{ \App\Support\Formato::duracion($enTurno->horas()) }} · {{ $usuario->turno?->nombre }} ({{ $usuario->turno?->horario() }})</p>
+                        <form method="POST" action="{{ route('asistencia.salida') }}" class="mt-3" data-confirmar="Se detiene el tiempo de la orden en la que estás trabajando; mañana sigue al marcar tu entrada." data-titulo="Marcar salida" data-boton="Marcar salida">@csrf
+                            <button class="btn-oscuro w-full"><x-icono n="salir" clase="size-4" /> Marcar salida</button>
+                        </form>
+                        <a href="{{ route('asistencia.index') }}" class="mt-2 block text-center text-xs font-semibold text-marca-700 hover:underline">Mi asistencia</a>
+                    </div>
+                </div>
+            @else
+                <form method="POST" action="{{ route('asistencia.entrada') }}">@csrf
+                    <button class="btn-primario btn-sm"><x-icono n="reloj" clase="size-4" /> Marcar entrada</button>
+                </form>
+            @endif
+        @endif
+
         {{-- Notificaciones --}}
         <div class="relative" x-data="campana('{{ route('notificaciones.recientes') }}')" @click.outside="abierto = false">
             <button class="btn-icono relative text-carbon-600" @click="abierto = !abierto; abierto && cargar()" aria-label="Notificaciones">

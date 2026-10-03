@@ -47,6 +47,10 @@ class Permisos
                 'planes.ver' => 'Ver planes y calendario',
                 'planes.gestionar' => 'Crear y editar planes preventivos',
             ]],
+            'asistencia' => ['Asistencia y ocupación', [
+                'asistencia.ver' => 'Ver la asistencia y la ocupación de todo el personal',
+                'asistencia.gestionar' => 'Corregir marcas y administrar turnos',
+            ]],
             'herramientas' => ['Herramientas', [
                 'herramientas.ver' => 'Ver el catálogo de herramientas',
                 'herramientas.gestionar' => 'Crear y editar herramientas',
@@ -119,14 +123,14 @@ class Permisos
             'gerente_general' => ['Gerente general',
                 'Ve todo, reportes y costos, aprueba ajustes. No configura el sistema.',
                 array_merge($lecturaOperativa, [
-                    'ot.crear', 'inventario.ver_costos', 'movimientos.aprobar',
+                    'ot.crear', 'inventario.ver_costos', 'movimientos.aprobar', 'asistencia.ver',
                     'reportes.mantenimiento', 'reportes.repuestos', 'reportes.exportar',
                     'usuarios.ver', 'auditoria.ver',
                 ])],
             'gerente_mantenimiento' => ['Gerente de mantenimiento',
                 'Todo el módulo de mantenimiento, bodega de repuestos, proveedores y reportes del área.',
                 array_merge(
-                    self::delModulo(['maquinas', 'ot', 'bitacora', 'planes', 'herramientas', 'proveedores', 'inventario', 'movimientos', 'conteos']),
+                    self::delModulo(['maquinas', 'ot', 'bitacora', 'planes', 'asistencia', 'herramientas', 'proveedores', 'inventario', 'movimientos', 'conteos']),
                     ['dashboard.ver', 'reportes.mantenimiento', 'reportes.repuestos', 'reportes.exportar', 'usuarios.ver']
                 )],
             'admin_mantenimiento' => ['Administrador de mantenimiento',
@@ -134,7 +138,7 @@ class Permisos
                 ['dashboard.ver', 'maquinas.ver', 'maquinas.crear', 'maquinas.editar',
                     'ot.ver_todas', 'ot.crear', 'ot.editar', 'ot.asignar', 'ot.ejecutar', 'ot.cancelar',
                     'bitacora.ver', 'bitacora.crear', 'bitacora.editar',
-                    'planes.ver', 'planes.gestionar',
+                    'planes.ver', 'planes.gestionar', 'asistencia.ver', 'asistencia.gestionar',
                     'herramientas.ver', 'herramientas.gestionar', 'herramientas.asignar',
                     'proveedores.ver', 'proveedores.gestionar',
                     'inventario.ver', 'inventario.ver_costos', 'inventario.gestionar',
@@ -152,7 +156,7 @@ class Permisos
             'contador' => ['Contador',
                 'Solo lectura: repuestos valorizados, movimientos, costos de mantenimiento y reportes con exportación.',
                 ['dashboard.ver', 'inventario.ver', 'inventario.ver_costos', 'movimientos.ver',
-                    'conteos.ver', 'proveedores.ver', 'bitacora.ver',
+                    'conteos.ver', 'proveedores.ver', 'bitacora.ver', 'asistencia.ver',
                     'reportes.repuestos', 'reportes.mantenimiento', 'reportes.exportar']],
             'consulta' => ['Consulta',
                 'Solo lectura de la operación, sin costos ni administración.', $lecturaOperativa],

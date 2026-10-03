@@ -1,81 +1,114 @@
 <x-layouts.app titulo="Reporte de mantenimiento">
+@php
+    $prevCorr = ($porTipo['preventivo'] ?? 0) + ($porTipo['correctivo'] ?? 0);
+    $ratioPrev = $prevCorr ? (int) round(($porTipo['preventivo'] ?? 0) / $prevCorr * 100) : null;
+    $tonoPct = fn ($p) => $p === null ? 'carbon' : ($p >= 80 ? 'verde' : ($p >= 60 ? 'ambar' : 'rojo'));
+@endphp
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <p class="text-sm text-carbon-600">Del <b>@fecha($desde)</b> al <b>@fecha($hasta)</b></p>
     <x-grafica.periodo :desde="$desde" :hasta="$hasta" />
 </div>
 
-<div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+{{-- Resumen en palabras --}}
+<section class="tarjeta mb-6 p-5 sm:p-6">
+    @php
+        $frase = 'Se completaron <b class="text-carbon-900">'.$k['completadas'].' '.($k['completadas'] === 1 ? 'orden' : 'órdenes').'</b>'
+            .($k['cumplimiento'] !== null ? ', <b class="text-carbon-900">'.$k['cumplimiento'].' %</b> antes de su fecha de vencimiento' : '').'. '
+            .'Hoy hay <b class="text-carbon-900">'.$k['abiertas'].' abiertas</b>'
+            .($k['atrasadas'] ? ', de las cuales <a href="'.route('ot.index', ['situacion' => 'atrasada']).'" class="font-bold text-marca-700 hover:underline">'.$k['atrasadas'].' están atrasadas</a>' : '').'. '
+            .($ratioPrev !== null ? 'El <b class="text-carbon-900">'.$ratioPrev.' %</b> del trabajo fue preventivo'.($ratioPrev >= 70 ? ', dentro de la meta.' : ' (la meta usual es más de 70 %).') : '');
+    @endphp
+    <p class="text-lg leading-relaxed text-carbon-700">{!! $frase !!}</p>
+</section>
+
+<div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
     <x-kpi titulo="Órdenes completadas" :valor="$k['completadas']" icono="check-circulo" tono="verde" :nota="$k['creadas'].' creadas en el período'" />
-    <x-kpi titulo="Cumplimiento a tiempo" :valor="$k['cumplimiento'] !== null ? $k['cumplimiento'].'%' : '—'" icono="reloj" :tono="($k['cumplimiento'] ?? 100) >= 80 ? 'verde' : 'ambar'" nota="Completadas antes del vencimiento" />
-    <x-kpi titulo="Pendientes hoy" :valor="$k['abiertas']" icono="portapapeles" :nota="$k['atrasadas'].' atrasadas'" :tono="$k['atrasadas'] ? 'rojo' : 'carbon'" />
-    <x-kpi titulo="Horas de mantenimiento" :valor="\App\Support\Formato::numero($k['horas'], 1)" icono="llave" tono="azul" :nota="'Paro de máquinas: '.\App\Support\Formato::numero($k['paro'], 1).' h'.($k['mttr'] !== null ? ' · MTTR '.$k['mttr'].' h' : '')" />
+    <x-kpi titulo="Completadas a tiempo" :valor="$k['cumplimiento'] !== null ? $k['cumplimiento'].'%' : '—'" icono="reloj" :tono="$tonoPct($k['cumplimiento'])" nota="Antes de su vencimiento" />
+    <x-kpi titulo="Preventivo a tiempo" :valor="$k['preventivo'] !== null ? $k['preventivo'].'%' : '—'" icono="repetir" :tono="$tonoPct($k['preventivo'])" nota="Cumplimiento del plan preventivo" />
+    <x-kpi titulo="Paro de máquinas" :valor="\App\Support\Formato::numero($k['paro'], 1).' h'" icono="alerta" :tono="$k['paro'] ? 'rojo' : 'carbon'" :nota="$k['mttr'] !== null ? 'Reparación promedio (MTTR): '.$k['mttr'].' h' : 'Sin paros registrados'" />
 </div>
 
+{{-- ¿Cómo vamos? --}}
 <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-    {{-- Tendencia --}}
     <section class="tarjeta xl:col-span-2">
-        <div class="tarjeta-cabeza">
-            <h3 class="tarjeta-titulo">Órdenes por semana</h3>
-            <div class="flex gap-3 text-xs text-carbon-600"><span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-carbon-300"></span>Creadas</span><span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-marca-600"></span>Completadas</span></div>
-        </div>
-        @php $maxS = max(1, $semanas->max('creadas'), $semanas->max('completadas')); @endphp
-        <div class="flex h-56 items-end gap-1.5 overflow-x-auto px-5 pt-6 pb-2">
-            @foreach ($semanas as $s)
-                <div class="group flex min-w-7 flex-1 flex-col items-center gap-1">
-                    <div class="flex h-44 w-full items-end justify-center gap-0.5">
-                        <div class="w-1/2 rounded-t bg-carbon-300 transition-all group-hover:bg-carbon-400" style="height: {{ $s['creadas'] / $maxS * 100 }}%" title="{{ $s['creadas'] }} creadas"></div>
-                        <div class="w-1/2 rounded-t bg-marca-600 transition-all group-hover:bg-marca-700" style="height: {{ $s['completadas'] / $maxS * 100 }}%" title="{{ $s['completadas'] }} completadas"></div>
-                    </div>
-                    <span class="text-[10px] text-carbon-400">{{ $s['etiqueta'] }}</span>
-                </div>
-            @endforeach
+        <div class="tarjeta-cabeza"><div><h3 class="tarjeta-titulo">Órdenes por semana</h3><p class="text-xs text-carbon-500">Si las completadas quedan por debajo de las creadas, el trabajo pendiente crece.</p></div></div>
+        <div class="p-5">
+            <x-grafica.columnas :datos="$semanas->map(fn ($s) => $s + ['titulo' => 'Semana del '.$s['etiqueta']])->all()"
+                :series="['creadas' => ['Creadas', '#d6d1cb'], 'completadas' => ['Completadas', '#2a78d6']]" />
         </div>
     </section>
 
-    {{-- Por tipo --}}
-    <section class="tarjeta">
-        <div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Trabajos por tipo</h3></div>
-        @php
-            $total = max(1, $porTipo->sum());
-            $colores = ['preventivo' => '#10b981', 'correctivo' => '#d90016', 'predictivo' => '#8b5cf6', 'mejora' => '#0ea5e9', 'proyecto' => '#f59e0b'];
-            $acum = 0;
-        @endphp
-        <div class="flex items-center gap-6 p-5">
-            <svg viewBox="0 0 42 42" class="size-36 shrink-0 -rotate-90">
-                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#efece8" stroke-width="6"/>
-                @foreach ($porTipo as $t => $n)
-                    @php $pct = $n / $total * 100; @endphp
-                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="{{ $colores[$t] ?? '#a39c94' }}" stroke-width="6" stroke-dasharray="{{ $pct }} {{ 100 - $pct }}" stroke-dashoffset="{{ -$acum }}"/>
-                    @php $acum += $pct; @endphp
+    <div class="space-y-6">
+        <section class="tarjeta">
+            <div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Abiertas hoy</h3><span class="text-sm font-bold tabular-nums">{{ $k['abiertas'] }}</span></div>
+            <div class="p-5">
+                <x-grafica.apilada :datos="collect(['pendiente', 'en_progreso', 'en_espera'])->map(fn ($e) => ['etiqueta' => \App\Models\OrdenTrabajo::ESTADOS[$e], 'valor' => $abiertasPorEstado[$e] ?? 0, 'color' => \App\Support\Colores::ESTADOS_OT[$e], 'href' => route('ot.index', ['estado' => $e])])->all()" />
+            </div>
+        </section>
+        <section class="tarjeta">
+            <div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Máquinas hoy</h3><a href="{{ route('maquinas.index') }}" class="text-sm font-semibold text-marca-700 hover:underline">Ver</a></div>
+            <div class="grid grid-cols-3 divide-x divide-carbon-100 text-center">
+                @foreach (['operativa' => ['Operativas', 'text-emerald-600'], 'en_mantenimiento' => ['En mantenimiento', 'text-sky-700'], 'fuera_servicio' => ['Fuera de servicio', 'text-marca-700']] as $e => [$t, $c])
+                    <a href="{{ route('maquinas.index', ['estado' => $e]) }}" class="px-2 py-4 transition hover:bg-carbon-50"><p class="font-display text-2xl font-extrabold tabular-nums {{ $c }}">{{ $estadoMaquinas[$e] ?? 0 }}</p><p class="text-xs text-carbon-500">{{ $t }}</p></a>
                 @endforeach
-            </svg>
-            <ul class="space-y-2 text-sm">
-                @forelse ($porTipo as $t => $n)
-                    <li class="flex items-center gap-2"><span class="size-2.5 rounded-sm" style="background: {{ $colores[$t] ?? '#a39c94' }}"></span>{{ \App\Models\OrdenTrabajo::TIPOS[$t] ?? $t }} <b class="ml-auto pl-3 tabular-nums">{{ $n }}</b></li>
-                @empty
-                    <li class="text-carbon-500">Sin trabajos en el período.</li>
-                @endforelse
-            </ul>
-        </div>
-        @if ($porTipo->sum())
-            <p class="border-t border-carbon-100 px-5 py-3 text-xs text-carbon-500">Preventivo sobre correctivo: <b class="text-carbon-800">{{ round(($porTipo['preventivo'] ?? 0) / max(1, ($porTipo['preventivo'] ?? 0) + ($porTipo['correctivo'] ?? 0)) * 100) }}%</b> (la meta usual es más de 70 %).</p>
-        @endif
-    </section>
+            </div>
+        </section>
+    </div>
+</div>
 
-    {{-- Técnicos --}}
+{{-- ¿Qué se hizo? --}}
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
     <section class="tarjeta">
-        <div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Horas por técnico</h3></div>
-        <div class="p-5"><x-grafica.barras :datos="$porTecnico->map(fn ($t) => ['etiqueta' => $t['nombre'], 'valor' => $t['horas'], 'nota' => $t['trabajos'].' trabajos'])->all()" sufijo=" h" /></div>
+        <div class="tarjeta-cabeza"><div><h3 class="tarjeta-titulo">Qué tipo de trabajo se hizo</h3><p class="text-xs text-carbon-500">Órdenes completadas</p></div></div>
+        <div class="p-5">
+            <x-grafica.dona nota="completadas" :datos="collect(\App\Models\OrdenTrabajo::TIPOS)->map(fn ($n, $t) => ['etiqueta' => $n, 'valor' => $porTipo[$t] ?? 0, 'color' => \App\Support\Colores::TIPOS_OT[$t]])->values()->all()" />
+        </div>
     </section>
+    <section class="tarjeta">
+        <div class="tarjeta-cabeza"><div><h3 class="tarjeta-titulo">Por especialidad</h3><p class="text-xs text-carbon-500">Órdenes completadas</p></div></div>
+        <div class="p-5"><x-grafica.barras :datos="$porEspecialidad->map(fn ($n, $e) => ['etiqueta' => $e, 'valor' => $n])->values()->all()" color="bg-carbon-700" /></div>
+    </section>
+</div>
 
-    {{-- Máquinas --}}
-    <section class="tarjeta overflow-hidden xl:col-span-2">
-        <div class="tarjeta-cabeza"><h3 class="tarjeta-titulo">Máquinas con más correctivos</h3></div>
-        @if ($porMaquina->isEmpty())
-            <p class="py-8 text-center text-sm text-carbon-500">Sin trabajos en el período.</p>
-        @else
+{{-- ¿Quién lo hizo? --}}
+<section class="tarjeta mt-6 overflow-hidden">
+    <div class="tarjeta-cabeza">
+        <div><h3 class="tarjeta-titulo">Técnicos</h3><p class="text-xs text-carbon-500">Órdenes completadas en el período como responsable</p></div>
+        @can('asistencia.ver')<a href="{{ route('reportes.ocupacion', ['desde' => $desde->toDateString(), 'hasta' => $hasta->toDateString()]) }}" class="btn-secundario btn-sm"><x-icono n="usuarios" clase="size-4" /> Ocupación del personal</a>@endcan
+    </div>
+    @if ($porTecnico->isEmpty())
+        <p class="py-8 text-center text-sm text-carbon-500">Sin órdenes completadas en el período.</p>
+    @else
+    <div class="overflow-x-auto">
         <table class="tabla">
-            <thead><tr><th>Máquina</th><th class="text-right">Correctivos</th><th class="text-right">Preventivos</th>@if ($costos)<th class="text-right">Servicios externos</th><th class="text-right">Repuestos</th>@endif</tr></thead>
+            <thead><tr><th>Técnico</th><th class="text-right">Completadas</th><th class="text-right">A tiempo</th><th class="text-right">Correctivas</th><th class="text-right">Horas</th><th class="text-right">Abiertas hoy</th>@can('asistencia.ver')<th class="w-64">Ocupación</th>@endcan</tr></thead>
+            <tbody class="divide-y divide-carbon-50">
+            @foreach ($porTecnico as $t)
+                <tr>
+                    <td><div class="flex items-center gap-2.5"><span class="grid size-8 shrink-0 place-items-center rounded-full bg-carbon-900 text-[11px] font-bold text-white">{{ $t->usuario->iniciales() }}</span><span class="font-semibold text-carbon-900">{{ $t->usuario->name }}</span></div></td>
+                    <td class="tabla-num font-bold">{{ $t->completadas }}</td>
+                    <td class="tabla-num"><span class="{{ $t->a_tiempo >= 80 ? 'insignia-verde' : ($t->a_tiempo >= 60 ? 'insignia-ambar' : 'insignia-roja') }}">{{ $t->a_tiempo }} %</span></td>
+                    <td class="tabla-num">{{ $t->correctivas }}</td>
+                    <td class="tabla-num">{{ \App\Support\Formato::duracion($t->horas) }}</td>
+                    <td class="tabla-num"><a href="{{ route('ot.index', ['responsable' => $t->usuario->id]) }}" class="hover:text-marca-700">{{ $t->abiertas }}</a></td>
+                    @can('asistencia.ver')<td>@if ($t->usuario->turno_id)<x-ocupacion :pct="$t->ocupacion" :detalle="false" />@else<span class="text-xs text-carbon-400">No marca asistencia</span>@endif</td>@endcan
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+</section>
+
+{{-- ¿Dónde? --}}
+<section class="tarjeta mt-6 overflow-hidden">
+    <div class="tarjeta-cabeza"><div><h3 class="tarjeta-titulo">Máquinas que más mantenimiento pidieron</h3><p class="text-xs text-carbon-500">Las que más correctivos tuvieron primero</p></div></div>
+    @if ($porMaquina->isEmpty())
+        <p class="py-8 text-center text-sm text-carbon-500">Sin trabajos en el período.</p>
+    @else
+    <div class="overflow-x-auto">
+        <table class="tabla">
+            <thead><tr><th>Máquina</th><th class="text-right">Correctivos</th><th class="text-right">Preventivos</th><th class="text-right">Horas</th><th class="text-right">Paro</th>@if ($costos)<th class="text-right">Servicios externos</th><th class="text-right">Repuestos</th>@endif</tr></thead>
             <tbody class="divide-y divide-carbon-50">
             @foreach ($porMaquina as $r)
                 @php $m = $maquinas[$r->maquina_id] ?? null; @endphp
@@ -83,6 +116,8 @@
                     <td>@if ($m)<a href="{{ route('maquinas.show', ['maquina' => $m, 'tab' => 'bitacora']) }}" class="font-semibold text-carbon-900 hover:text-marca-700">{{ $m->etiqueta() }}</a>@endif</td>
                     <td class="tabla-num font-semibold {{ $r->correctivos > 2 ? 'text-marca-700' : '' }}">{{ $r->correctivos }}</td>
                     <td class="tabla-num">{{ $r->preventivos }}</td>
+                    <td class="tabla-num">{{ \App\Support\Formato::numero($r->horas, 1) }} h</td>
+                    <td class="tabla-num">{{ isset($paroPorMaquina[$r->maquina_id]) ? \App\Support\Formato::numero($paroPorMaquina[$r->maquina_id], 1).' h' : '—' }}</td>
                     @if ($costos)
                         <td class="tabla-num">@dinero($r->costo_externo)</td>
                         <td class="tabla-num">@dinero($repuestos[$r->maquina_id] ?? 0)</td>
@@ -91,7 +126,7 @@
             @endforeach
             </tbody>
         </table>
-        @endif
-    </section>
-</div>
+    </div>
+    @endif
+</section>
 </x-layouts.app>

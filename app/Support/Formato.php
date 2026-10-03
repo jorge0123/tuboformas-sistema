@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 
 class Formato
@@ -27,9 +28,18 @@ class Formato
         if (! $f) {
             return '—';
         }
-        $f = $f instanceof CarbonInterface ? $f : \Carbon\Carbon::parse($f);
+        $f = $f instanceof CarbonInterface ? $f : Carbon::parse($f);
 
         return $f->format($hora ? 'd/m/Y H:i' : 'd/m/Y');
+    }
+
+    /** 8.0833 h → "8 h 05 min"; 0.5 → "30 min". */
+    public static function duracion($horas): string
+    {
+        $min = (int) round((float) $horas * 60);
+        $h = intdiv($min, 60);
+
+        return $h ? $h.' h '.str_pad((string) ($min % 60), 2, '0', STR_PAD_LEFT).' min' : ($min % 60).' min';
     }
 
     public static function bytes(int $b): string

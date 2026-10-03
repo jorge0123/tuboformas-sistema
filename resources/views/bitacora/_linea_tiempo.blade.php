@@ -5,7 +5,7 @@
 <ol class="relative px-5 py-4">
     @foreach ($registros as $b)
         @php
-            $color = ['preventivo' => 'bg-emerald-500', 'correctivo' => 'bg-marca-600', 'predictivo' => 'bg-violet-500', 'mejora' => 'bg-sky-500', 'proyecto' => 'bg-amber-500'][$b->tipo] ?? 'bg-carbon-400';
+            $color = ['preventivo' => 'bg-emerald-500', 'correctivo' => 'bg-marca-600', 'predictivo' => 'bg-violet-500', 'mejora' => 'bg-sky-500', 'ampliacion' => 'bg-teal-500', 'proyecto' => 'bg-amber-500'][$b->tipo] ?? 'bg-carbon-400';
         @endphp
         <li class="relative flex gap-4 pb-6 last:pb-0">
             @unless ($loop->last)<span class="absolute top-4 bottom-0 left-[5px] w-px bg-carbon-200"></span>@endunless

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Auditoria;
 use App\Models\Especialidad;
+use App\Models\Turno;
 use App\Models\User;
 use App\Support\Permisos;
 use Illuminate\Http\Request;
@@ -98,6 +99,7 @@ class UsuarioController extends Controller
             'u' => $u,
             'roles' => $roles,
             'especialidades' => Especialidad::where('activo', true)->orderBy('nombre')->get(),
+            'turnos' => Turno::where('activo', true)->orderBy('hora_entrada')->get(),
             'permisosRol' => $roles->mapWithKeys(fn ($r) => [$r->name => $r->permissions->pluck('name')]),
         ];
     }
@@ -111,6 +113,7 @@ class UsuarioController extends Controller
             'puesto' => ['nullable', 'string', 'max:100'],
             'telefono' => ['nullable', 'string', 'max:30'],
             'especialidad_id' => ['nullable', 'exists:especialidades,id'],
+            'turno_id' => ['nullable', 'exists:turnos,id'],
             'password' => [$u ? 'nullable' : 'required', 'confirmed', Password::min(8)->letters()->numbers()],
             'rol' => ['required', 'exists:roles,name'],
             'permisos_extra' => ['nullable', 'array'],

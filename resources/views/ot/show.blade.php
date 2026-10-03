@@ -1,4 +1,11 @@
 <x-layouts.app :titulo="$ot->folio">
+@php
+    $yo = auth()->user();
+    $marca = $yo->marcaAsistencia();
+    $enTurno = $marca ? $yo->asistenciaAbierta() : null;
+    $miTramo = $ot->tramos->first(fn ($t) => ! $t->fin_at && $t->user_id === $yo->id);
+    $tiempo = $ot->tramos->sum(fn ($t) => $t->horas());
+@endphp
 <x-slot:migas><a href="{{ route('ot.index') }}" class="hover:text-carbon-800">Órdenes de trabajo</a><x-icono n="derecha" clase="size-3" />{{ $ot->folio }}</x-slot:migas>
 
 {{-- Encabezado --}}
@@ -67,6 +74,51 @@
     <div class="space-y-6 xl:col-span-2">
 
         {{-- Registrar avance (tracking) --}}
+        {{-- Tiempo laboral: corre solo mientras el técnico está marcado y trabajando en esta orden --}}
+        @if ($ot->tramos->isNotEmpty() || ($permisos['ejecutar'] && $ot->estaAbierta() && $marca))
+        <section class="tarjeta overflow-hidden">
+            <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+                <span class="grid size-12 shrink-0 place-items-center rounded-xl {{ $miTramo ? 'bg-emerald-50 text-emerald-600' : 'bg-carbon-100 text-carbon-500' }}"><x-icono n="reloj" clase="size-6" /></span>
+                <div class="min-w-0 flex-1">
+                    <p class="dato-etiqueta">Tiempo laboral en esta orden</p>
+                    <p class="font-display text-2xl font-extrabold tabular-nums">{{ \App\Support\Formato::duracion($tiempo) }}</p>
+                    <p class="text-xs text-carbon-500">
+                        @if ($miTramo) Tu tiempo corre desde las {{ $miTramo->inicio_at->format('H:i') }}. Se detiene al pausar, poner la orden en espera o marcar salida.
+                        @elseif ($marca && ! $enTurno && $ot->estaAbierta()) Marca tu entrada para trabajar en esta orden.
+                        @else Solo cuenta el tiempo dentro del turno de cada técnico. @endif
+                    </p>
+                </div>
+                @if ($permisos['ejecutar'] && $ot->estaAbierta() && $marca)
+                    @if ($miTramo)
+                        <form method="POST" action="{{ route('ot.pausar', $ot) }}">@csrf<button class="btn-secundario max-sm:w-full"><x-icono n="pausa" clase="size-4" /> Pausar mi tiempo</button></form>
+                    @elseif ($enTurno)
+                        <form method="POST" action="{{ route('ot.trabajar', $ot) }}">@csrf<button class="btn-exito max-sm:w-full"><x-icono n="play" clase="size-4" /> Trabajar en esta orden</button></form>
+                    @else
+                        <form method="POST" action="{{ route('asistencia.entrada') }}">@csrf<button class="btn-primario max-sm:w-full"><x-icono n="reloj" clase="size-4" /> Marcar entrada</button></form>
+                    @endif
+                @endif
+            </div>
+            @if ($ot->tramos->isNotEmpty())
+            <details class="border-t border-carbon-100">
+                <summary class="cursor-pointer px-5 py-2.5 text-xs font-semibold text-carbon-600 hover:bg-carbon-50">Ver detalle por persona y día ({{ $ot->tramos->count() }} {{ $ot->tramos->count() === 1 ? 'tramo' : 'tramos' }})</summary>
+                <div class="divide-y divide-carbon-50">
+                    @foreach ($ot->tramos->groupBy('user_id') as $tramos)
+                        <div class="px-5 py-3">
+                            <p class="flex justify-between text-sm font-semibold"><span>{{ $tramos->first()->user->name }}</span><span class="tabular-nums">{{ \App\Support\Formato::duracion($tramos->sum(fn ($t) => $t->horas())) }}</span></p>
+                            <ul class="mt-1 space-y-0.5 text-xs text-carbon-500">
+                                @foreach ($tramos as $t)
+                                    <li class="flex justify-between gap-3"><span class="tabular-nums">{{ ucfirst($t->inicio_at->translatedFormat('D d/m')) }} · {{ $t->inicio_at->format('H:i') }} – {{ $t->fin_at?->format('H:i') ?? 'ahora' }}</span>
+                                        <span>{{ $t->fin_at ? (\App\Models\OtTramo::CIERRES[$t->cierre] ?? '') : 'En curso' }} · {{ \App\Support\Formato::duracion($t->horas()) }}</span></li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endforeach
+                </div>
+            </details>
+            @endif
+        </section>
+        @endif
+
         @if ($permisos['ejecutar'] && $ot->estaAbierta())
         <section class="tarjeta" x-data="{ estado: '{{ $ot->estado === 'pendiente' ? 'en_progreso' : $ot->estado }}', progreso: {{ max($ot->progreso, $ot->estado === 'pendiente' ? 10 : 0) }} }">
             <div class="tarjeta-cabeza">
@@ -77,7 +129,7 @@
             </div>
             <form method="POST" action="{{ route('ot.seguimiento', $ot) }}" class="space-y-4 p-5">
                 @csrf
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div class="grid grid-cols-1 gap-4 {{ $marca ? 'sm:grid-cols-2' : 'sm:grid-cols-3' }}">
                     <div>
                         <span class="etiqueta">Estado</span>
                         <div class="grid grid-cols-3 gap-1 rounded-lg bg-carbon-100 p-1">
@@ -93,10 +145,12 @@
                         <label class="etiqueta flex justify-between">Avance <span class="font-display font-extrabold text-marca-700" x-text="progreso + '%'"></span></label>
                         <input type="range" name="progreso" min="0" max="95" step="5" x-model="progreso" class="mt-2.5 w-full accent-marca-600">
                     </div>
+                    @unless ($marca)
                     <div>
                         <label for="horas" class="etiqueta">Horas trabajadas hoy</label>
                         <input id="horas" name="horas" type="number" step="0.25" min="0" max="24" class="campo" placeholder="ej. 2.5">
                     </div>
+                    @endunless
                 </div>
                 <div x-show="estado === 'en_espera'" x-collapse>
                     <label for="motivo_espera" class="etiqueta">¿Qué se está esperando?</label>
@@ -237,7 +291,7 @@
                 @if ($ot->completada_at)
                 <div class="flex justify-between gap-3 px-5 py-3"><dt class="text-carbon-500">Completada</dt><dd class="font-medium">{{ $ot->completada_at->format('d/m/Y H:i') }}</dd></div>
                 @endif
-                <div class="flex justify-between gap-3 px-5 py-3"><dt class="text-carbon-500">Horas trabajadas</dt><dd class="font-semibold tabular-nums">@num($ot->horas_trabajo ?? 0) h</dd></div>
+                <div class="flex justify-between gap-3 px-5 py-3"><dt class="text-carbon-500">Horas trabajadas</dt><dd class="font-semibold tabular-nums">{{ \App\Support\Formato::duracion((float) $ot->horas_trabajo + $ot->tramos->whereNull('fin_at')->sum(fn ($t) => $t->horas())) }}</dd></div>
                 @if ($ot->detuvo_maquina)
                 <div class="flex justify-between gap-3 px-5 py-3"><dt class="text-carbon-500">Paro de máquina</dt><dd class="font-semibold text-marca-700">@num($ot->horas_paro ?? 0) h</dd></div>
                 @endif
@@ -284,7 +338,11 @@
         </div>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div><label class="etiqueta" for="componente">Componente</label><input id="componente" name="componente" class="campo" placeholder="ej. Motor, Bomba"></div>
+            @if ($marca)
+            <div><span class="etiqueta">Tiempo laboral</span><p class="campo bg-carbon-50 font-semibold tabular-nums">{{ \App\Support\Formato::duracion($tiempo) }}</p></div>
+            @else
             <div><label class="etiqueta" for="horas_c">Horas de esta jornada</label><input id="horas_c" name="horas" type="number" step="0.25" min="0" class="campo"></div>
+            @endif
             <div><label class="etiqueta" for="horometro">Horómetro actual</label><input id="horometro" name="horometro" type="number" step="0.1" min="0" class="campo" placeholder="{{ $ot->maquina?->horometro }}"></div>
         </div>
         <div class="space-y-3 rounded-xl bg-carbon-50 p-4">

@@ -30,6 +30,10 @@ class Menu
                 ['Herramientas', 'herramientas.index', 'martillo', ['herramientas.ver'], 'herramientas.*'],
                 ['Proveedores', 'proveedores.index', 'camion', ['proveedores.ver'], 'proveedores.*'],
             ],
+            'Personal' => [
+                ['Asistencia', 'asistencia.index', 'reloj', ['asistencia.ver'], 'asistencia.*'],
+                ['Turnos', 'turnos.index', 'calendario', ['asistencia.gestionar'], 'turnos.*'],
+            ],
             'Bodega de repuestos' => [
                 ['Repuestos', 'productos.index', 'cajas', ['inventario.ver'], 'productos.*', 'bajo_minimo'],
                 ['Movimientos', 'movimientos.index', 'flechas', ['movimientos.ver'], 'movimientos.*', 'por_aprobar'],
@@ -37,6 +41,7 @@ class Menu
             ],
             'Reportes' => [
                 ['Mantenimiento', 'reportes.mantenimiento', 'grafica', ['reportes.mantenimiento'], 'reportes.mantenimiento'],
+                ['Ocupación del personal', 'reportes.ocupacion', 'usuarios', ['asistencia.ver'], 'reportes.ocupacion'],
                 ['Repuestos', 'reportes.repuestos', 'tendencia', ['reportes.repuestos'], 'reportes.repuestos'],
             ],
             'Administración' => [

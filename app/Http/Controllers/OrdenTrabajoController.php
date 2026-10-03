@@ -9,6 +9,7 @@ use App\Models\OrdenTrabajo;
 use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Models\User;
+use App\Services\AsistenciaService;
 use App\Services\InventarioService;
 use App\Services\OrdenTrabajoService;
 use App\Support\Csv;
@@ -18,7 +19,7 @@ use Illuminate\Validation\Rule;
 
 class OrdenTrabajoController extends Controller
 {
-    public function __construct(private OrdenTrabajoService $ots) {}
+    public function __construct(private OrdenTrabajoService $ots, private AsistenciaService $asistencia) {}
 
     public function index(Request $request)
     {
@@ -87,7 +88,7 @@ class OrdenTrabajoController extends Controller
     {
         $this->puedeVer($request->user(), $ot);
         $ot->load(['maquina.area', 'responsable.especialidad', 'solicitante', 'ayudantes', 'especialidad', 'plan',
-            'seguimientos.user', 'archivos.user', 'bitacora', 'movimientos.lineas.producto.unidad']);
+            'seguimientos.user', 'archivos.user', 'bitacora', 'movimientos.lineas.producto.unidad', 'tramos.user']);
 
         $u = $request->user();
         $permisos = [
@@ -215,6 +216,29 @@ class OrdenTrabajoController extends Controller
         return response()->json(['ok' => true, 'estado' => $ot->fresh()->estado]);
     }
 
+    /** "Trabajar en esta orden": empieza a contar su tiempo (y la pasa a en progreso si hacía falta). */
+    public function trabajar(Request $request, OrdenTrabajo $ot)
+    {
+        $u = $request->user();
+        $this->autorizarEjecucion($u, $ot);
+        abort_unless($u->marcaAsistencia(), 422, 'El tiempo por orden es para quien marca asistencia.');
+        if ($ot->estado !== 'en_progreso') {
+            $this->ots->registrarSeguimiento($ot, ['estado' => 'en_progreso', 'texto' => null], $u);
+        } else {
+            $this->asistencia->iniciarTrabajo($ot, $u);
+        }
+
+        return back()->with('ok', 'Tu tiempo en '.$ot->folio.' está corriendo.');
+    }
+
+    public function pausar(Request $request, OrdenTrabajo $ot)
+    {
+        $this->autorizarEjecucion($request->user(), $ot);
+        $this->asistencia->pausarTrabajo($ot, $request->user());
+
+        return back()->with('ok', 'Tiempo pausado. La orden sigue en progreso.');
+    }
+
     /** Repuestos usados: salen de la bodega de repuestos como consumo de mantenimiento ligado a la OT. */
     public function repuestos(Request $request, OrdenTrabajo $ot, InventarioService $inv)
     {
@@ -256,6 +280,7 @@ class OrdenTrabajoController extends Controller
             ->when($request->filled('especialidad'), fn ($q) => $q->where('especialidad_id', $request->especialidad))
             ->when($request->filled('responsable'), fn ($q) => $q->where('responsable_id', $request->responsable))
             ->when($request->filled('maquina'), fn ($q) => $q->where('maquina_id', $request->maquina))
+            ->when($request->boolean('sin_responsable'), fn ($q) => $q->whereNull('responsable_id'))
             ->when($request->boolean('mias'), fn ($q) => $q->where(fn ($w) => $w->where('responsable_id', $u->id)
                 ->orWhereHas('ayudantes', fn ($a) => $a->where('users.id', $u->id))));
     }
@@ -310,8 +335,10 @@ class OrdenTrabajoController extends Controller
         return $u->can('ot.editar') || ($u->can('ot.ejecutar') && $ot->laEjecuta($u));
     }
 
+    /** Puede ejecutar la OT y, si tiene turno, está marcado. */
     private function autorizarEjecucion(User $u, OrdenTrabajo $ot): void
     {
         abort_unless($this->puedeEjecutar($u, $ot), 403, 'Solo el responsable asignado puede actualizar esta orden.');
+        $this->asistencia->exigirEntrada($u);
     }
 }

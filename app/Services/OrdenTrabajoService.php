@@ -20,6 +20,8 @@ use Illuminate\Validation\ValidationException;
  */
 class OrdenTrabajoService
 {
+    public function __construct(private AsistenciaService $asistencia) {}
+
     public function crear(array $datos, User $usuario): OrdenTrabajo
     {
         $ot = DB::transaction(function () use ($datos, $usuario) {
@@ -89,7 +91,8 @@ class OrdenTrabajoService
 
     /**
      * El técnico registra avance: nota, % de avance, estado y horas trabajadas.
-     * Las horas se acumulan en la OT.
+     * Las horas se acumulan en la OT. Quien marca asistencia no captura horas: su tiempo
+     * corre solo mientras la OT está en progreso (AsistenciaService).
      */
     public function registrarSeguimiento(OrdenTrabajo $ot, array $d, User $usuario): void
     {
@@ -104,7 +107,7 @@ class OrdenTrabajoService
             throw ValidationException::withMessages(['motivo_espera' => 'Indica qué se está esperando (repuesto, cotización…).']);
         }
         $progreso = isset($d['progreso']) ? (int) $d['progreso'] : $ot->progreso;
-        $horas = isset($d['horas']) && $d['horas'] !== '' ? (float) $d['horas'] : null;
+        $horas = ! $usuario->marcaAsistencia() && isset($d['horas']) && $d['horas'] !== '' ? (float) $d['horas'] : null;
 
         DB::transaction(function () use ($ot, $d, $usuario, $estado, $progreso, $horas) {
             $cambioEstado = $estado !== $ot->estado;
@@ -123,6 +126,11 @@ class OrdenTrabajoService
                 'estado' => $estado,
                 'horas' => $horas,
             ]);
+            if ($estado === 'en_progreso') {
+                $this->asistencia->iniciarTrabajo($ot, $usuario);
+            } else {
+                $this->asistencia->detenerOrden($ot, $estado === 'en_espera' ? 'espera' : 'pausa');
+            }
             $this->marcarMaquina($ot);
         });
 
@@ -152,7 +160,10 @@ class OrdenTrabajoService
         }
 
         DB::transaction(function () use ($ot, $d, $usuario) {
-            $horas = isset($d['horas']) && $d['horas'] !== '' ? (float) $d['horas'] : null;
+            // El tiempo que venía corriendo se suma antes de pasar las horas a la bitácora.
+            $this->asistencia->detenerOrden($ot, 'completada');
+            $ot->refresh();
+            $horas = ! $usuario->marcaAsistencia() && isset($d['horas']) && $d['horas'] !== '' ? (float) $d['horas'] : null;
             $ot->update([
                 'estado' => 'completada',
                 'progreso' => 100,
@@ -206,6 +217,7 @@ class OrdenTrabajoService
             throw ValidationException::withMessages(['estado' => 'La orden ya está cerrada.']);
         }
         DB::transaction(function () use ($ot, $motivo, $usuario) {
+            $this->asistencia->detenerOrden($ot, 'cancelada');
             $ot->update(['estado' => 'cancelada', 'motivo_espera' => null]);
             $ot->seguimientos()->create([
                 'user_id' => $usuario->id, 'tipo' => 'estado', 'texto' => "Cancelada: $motivo", 'estado' => 'cancelada',

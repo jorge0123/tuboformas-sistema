@@ -29,6 +29,7 @@ class OrdenTrabajo extends Model
         'correctivo' => 'Correctivo',
         'predictivo' => 'Predictivo',
         'mejora' => 'Mejora',
+        'ampliacion' => 'Ampliación',
         'proyecto' => 'Proyecto / instalación',
     ];
 
@@ -108,6 +109,11 @@ class OrdenTrabajo extends Model
     public function movimientos()
     {
         return $this->hasMany(Movimiento::class);
+    }
+
+    public function tramos()
+    {
+        return $this->hasMany(OtTramo::class, 'orden_trabajo_id')->orderBy('inicio_at');
     }
 
     public function estaAbierta(): bool

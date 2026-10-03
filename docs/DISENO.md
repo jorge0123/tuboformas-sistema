@@ -41,7 +41,7 @@ corrige uno de los dos en el mismo cambio.
 Toda tarea de mantenimiento es una OT, venga de un reporte de falla, de un plan preventivo
 o de un proyecto (ej. "instalar cisterna de entrada a fábrica").
 - Campos: folio (`OT-000123`), título, descripción, máquina (opcional), tipo
-  (`preventivo`, `correctivo`, `predictivo`, `mejora`, `proyecto`), especialidad
+  (`preventivo`, `correctivo`, `predictivo`, `mejora`, `ampliacion`, `proyecto`), especialidad
   (Eléctrico, Mecánico…), prioridad (`baja`, `media`, `alta`, `critica`), responsable,
   solicitante, fecha de inicio, fecha de vencimiento, progreso %, horas trabajadas,
   checklist, ¿detuvo la máquina? y horas de paro.
@@ -56,6 +56,9 @@ o de un proyecto (ej. "instalar cisterna de entrada a fábrica").
   - completada después del vencimiento → `completada_tarde`; si no → `completada_a_tiempo`
 - **Completar una OT crea automáticamente su registro en la bitácora de la máquina**
   (trabajo realizado, horas, responsable, repuestos). Es la regla "tiene que llegar a la bitácora".
+- **Tiempo laboral**: el tiempo de una OT es el que los técnicos trabajaron en ella estando
+  marcados (ver §2.10), no el tiempo de calendario. Si alguien trabaja 8 h, marca salida y al
+  día siguiente le dedica 3 h más, la OT suma 11 h. Quien no marca asistencia captura las horas a mano.
 - Repuestos usados en la OT: se descuentan de la bodega de repuestos con un movimiento
   `consumo_mantenimiento` ligado a la OT y a su máquina.
 
@@ -108,10 +111,19 @@ Una sola bodega con los repuestos e insumos del taller. La lógica vive en `App\
 - La lleva el **administrador de mantenimiento** (y el gerente de mantenimiento): no hay rol de bodega.
 
 ### 2.8 Tablero y reportes
-- Tablero según el rol: OT abiertas, atrasadas, por vencer, preventivos de la semana, mis OT,
-  repuestos bajo mínimo, ajustes pendientes de aprobar.
-- Reportes de mantenimiento: OT por estado, tipo y especialidad; cumplimiento del preventivo;
-  horas por técnico; máquinas con más correctivos; horas de paro; costo por máquina.
+- **Inicio** centrado en mantenimiento, según el rol: frase con lo atrasado, *mi jornada* (quien
+  marca asistencia: tiempo en turno, en órdenes y la OT en curso), indicadores de OT, mis órdenes,
+  las que requieren atención, "¿vamos al día?" (creadas contra completadas por semana), equipo de
+  hoy con su OT en curso y ocupación, órdenes abiertas por estado, preventivos, máquinas. De la
+  bodega solo aparece lo que pide acción (repuestos por pedir, ajustes por aprobar).
+- Reporte de mantenimiento: resumen en una frase, completadas, a tiempo, cumplimiento del
+  preventivo, paro y MTTR; órdenes por semana; abiertas por estado; máquinas por estado; trabajo
+  por tipo y especialidad; técnicos (completadas, a tiempo, horas, abiertas, ocupación); máquinas
+  con más correctivos con horas, paro y costos.
+- Reporte de ocupación del personal: ocupación del equipo y por técnico, día por día, llegadas
+  tarde, faltas, horas extra y salidas sin marcar.
+- Gráficas: los tipos de OT usan una paleta categórica validada en orden fijo (`App\Support\Colores`);
+  ocupación y estados usan colores de estado siempre con su texto (Buena ≥ 75 %, Media 50–74 %, Baja < 50 %).
 - Reportes de repuestos: valor de la bodega, compras y consumo del período, repuestos más
   usados, costo de repuestos por máquina, valor por categoría, bajo mínimo y movimientos por tipo.
 - Todo listado se puede exportar a Excel (CSV).
@@ -119,6 +131,27 @@ Una sola bodega con los repuestos e insumos del taller. La lógica vive en `App\
 ### 2.9 Administración
 Usuarios, roles y permisos, catálogos (áreas, especialidades, categorías de repuesto, unidades)
 y bitácora de auditoría (quién hizo qué y cuándo).
+
+### 2.10 Asistencia y ocupación
+Lógica en `App\Services\AsistenciaService`; cálculos en `App\Support\Ocupacion`.
+- **Turnos** (Personal → Turnos): nombre, hora de entrada y salida, días, tolerancia. Una salida
+  menor que la entrada termina al día siguiente (turno de noche). Cada persona tiene su turno
+  (Usuarios). **Quien tiene turno marca asistencia**; quien no, no.
+- **Marcar**: botón *Marcar entrada* / *Marcar salida* en la barra superior, en el inicio y en
+  Mi asistencia. Sin entrada marcada no puede registrar avance, checklist, repuestos ni completar OT.
+- **Tramos de trabajo** (`ot_tramos`): el tiempo de la persona en una OT corre desde que la pone en
+  progreso o pulsa *Trabajar en esta orden*, y se detiene al pausar, pasar a otra OT (una a la vez),
+  dejar la OT en espera, completarla/cancelarla o marcar salida. Al cerrar un tramo su tiempo se
+  suma a las horas de la OT. Al marcar la siguiente entrada se reanuda la OT que quedó corriendo.
+- **Salida olvidada**: `php artisan asistencia:cerrar` (cada 30 min por el cron) cierra la
+  asistencia a la hora de fin del turno (o tras lo que dura el turno en un día que no le toca),
+  la marca como *salida sin marcar* y avisa a la persona.
+- **Corrección** (`asistencia.gestionar`): se cambian entrada y salida con un motivo; si cambia la
+  salida, el tramo que se cortó con ella se ajusta y la OT suma o resta esa diferencia.
+- **Ocupación** = horas en órdenes / horas marcadas. Llegada tarde: entrada después de la
+  tolerancia. Horas extra: lo marcado por encima de lo que dura el turno. Falta: día de turno sin marca.
+- Permisos: `asistencia.ver` (asistencia del personal y reporte de ocupación), `asistencia.gestionar`
+  (turnos y correcciones).
 
 ## 3. Roles y permisos
 
@@ -180,7 +213,7 @@ Reglas que no dependen de la matriz:
   el correo va en cola. La campana consulta cada 30 s, muestra un toast con enlace y el número en la pestaña.
   Avisos: OT asignada, nueva sin responsable o crítica, avance, comentario, en espera (a coordinadores),
   completada y cancelada; herramienta entregada y recibida; ajuste por aprobar, aprobado o rechazado;
-  movimiento anulado; repuesto bajo el mínimo; conteo abierto y aplicado.
+  movimiento anulado; repuesto bajo el mínimo; conteo abierto y aplicado; salida sin marcar.
 - Despliegue en cPanel: ver `docs/DESPLIEGUE.md`.
 
 ## 5. Pendiente / siguientes fases

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ArchivoController;
+use App\Http\Controllers\AsistenciaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\CalendarioController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\RolController;
+use App\Http\Controllers\TurnoController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
@@ -43,6 +45,14 @@ Route::middleware(['auth', 'activo'])->group(function () {
     Route::post('/archivos', [ArchivoController::class, 'store'])->name('archivos.store');
     Route::delete('/archivos/{archivo}', [ArchivoController::class, 'destroy'])->name('archivos.destroy');
 
+    // ── Asistencia ─────────────────────────────────────────────────────
+    Route::get('asistencia', [AsistenciaController::class, 'index'])->name('asistencia.index');
+    Route::get('asistencia/exportar', [AsistenciaController::class, 'exportar'])->name('asistencia.exportar');
+    Route::post('asistencia/entrada', [AsistenciaController::class, 'entrada'])->name('asistencia.entrada');
+    Route::post('asistencia/salida', [AsistenciaController::class, 'salida'])->name('asistencia.salida');
+    Route::put('asistencia/{asistencia}', [AsistenciaController::class, 'update'])->name('asistencia.update');
+    Route::resource('turnos', TurnoController::class)->only(['index', 'store', 'update']);
+
     // ── Mantenimiento ──────────────────────────────────────────────────
     Route::get('maquinas/exportar', [MaquinaController::class, 'exportar'])->name('maquinas.exportar');
     Route::resource('maquinas', MaquinaController::class)->parameters(['maquinas' => 'maquina']);
@@ -55,6 +65,8 @@ Route::middleware(['auth', 'activo'])->group(function () {
     Route::post('ot/{ot}/completar', [OrdenTrabajoController::class, 'completar'])->name('ot.completar');
     Route::post('ot/{ot}/cancelar', [OrdenTrabajoController::class, 'cancelar'])->name('ot.cancelar');
     Route::post('ot/{ot}/mover', [OrdenTrabajoController::class, 'mover'])->name('ot.mover');
+    Route::post('ot/{ot}/trabajar', [OrdenTrabajoController::class, 'trabajar'])->name('ot.trabajar');
+    Route::post('ot/{ot}/pausar', [OrdenTrabajoController::class, 'pausar'])->name('ot.pausar');
     Route::post('ot/{ot}/repuestos', [OrdenTrabajoController::class, 'repuestos'])->name('ot.repuestos');
     Route::resource('ot', OrdenTrabajoController::class)->parameters(['ot' => 'ot']);
 
@@ -93,6 +105,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
 
     // ── Reportes ───────────────────────────────────────────────────────
     Route::get('reportes/mantenimiento', [ReporteController::class, 'mantenimiento'])->name('reportes.mantenimiento');
+    Route::get('reportes/ocupacion', [ReporteController::class, 'ocupacion'])->name('reportes.ocupacion');
     Route::get('reportes/repuestos', [ReporteController::class, 'repuestos'])->name('reportes.repuestos');
 
     // ── Administración ─────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-@props(['accion', 'placeholder' => 'Buscar…'])
+@props(['accion', 'placeholder' => 'Buscar…', 'buscar' => true])
 {{--
     Barra de búsqueda + filtros. Busca mientras se escribe (resources/js/vivo.js); los filtros extra van en el slot.
     En celular los filtros se pliegan detrás de un botón "Filtros" que muestra cuántos hay activos.
@@ -7,6 +7,7 @@
 <form method="GET" action="{{ $accion }}" data-filtro-vivo role="search" x-data="{ mas: false }"
       {{ $attributes->merge(['class' => 'group flex flex-wrap items-center gap-2']) }}>
     <div class="flex w-full items-center gap-2 sm:contents">
+        @if ($buscar)
         <div class="relative min-w-0 flex-1 sm:max-w-xs sm:min-w-56">
             <span class="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-carbon-400">
                 <x-icono n="buscar" clase="size-4 group-aria-busy:hidden" />
@@ -14,6 +15,7 @@
             </span>
             <input name="q" type="search" value="{{ request('q') }}" class="campo pl-9 [&::-webkit-search-cancel-button]:hidden" placeholder="{{ $placeholder }}" autocomplete="off" enterkeyhint="search" aria-label="Buscar">
         </div>
+        @endif
         @if ($slot->isNotEmpty())
             <button type="button" class="btn-secundario relative h-[2.625rem] shrink-0 sm:hidden" @click="mas = !mas" :aria-expanded="mas.toString()"
                     :class="mas && 'ring-carbon-400 bg-carbon-50'">
