@@ -214,6 +214,7 @@ if (-not $SinServicios) {
     if (-not (Get-Service TuboformasApache -ErrorAction SilentlyContinue)) {
         Correr $h.Httpd @('-k', 'install', '-n', 'TuboformasApache')
     }
+    Entorno-ServicioApache $h
     Set-Service TuboformasApache -StartupType Automatic
     sc.exe failure TuboformasApache reset= 86400 actions= restart/5000/restart/5000/restart/30000 | Out-Null
     Restart-Service TuboformasApache -Force

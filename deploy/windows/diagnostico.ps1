@@ -33,9 +33,9 @@ if ($conf) {
     $origen = (Get-NetIPAddress -IPAddress $ip -ErrorAction SilentlyContinue).PrefixOrigin
     $estadoIp = if ($ipFija -and $ip -ne $ipFija) { 'FALLA' } elseif ($origen -eq 'Manual') { 'OK' } else { 'AVISO' }
     Linea $estadoIp 'Red' "$($conf.InterfaceAlias): $ip ($(if ($origen -eq 'Manual') { 'fija' } else { 'automática' }))$(if ($ipFija) { " · esperada $ipFija" }) · puerta $($conf.IPv4DefaultGateway.NextHop)"
-    Linea $(if (Test-Connection $conf.IPv4DefaultGateway.NextHop -Count 1 -Quiet) { 'OK' } else { 'FALLA' }) 'Router' 'responde al ping'
+    Linea $(if (Responde-Ping $conf.IPv4DefaultGateway.NextHop 2) { 'OK' } else { 'FALLA' }) 'Router' 'responde al ping'
 } else { Linea 'FALLA' 'Red' 'sin conexión a ninguna red' }
-Linea $(if (Test-Connection 8.8.8.8 -Count 1 -Quiet) { 'OK' } else { 'AVISO' }) 'Internet' '(solo se necesita para correos y actualizaciones)'
+Linea $(if (Responde-Ping 8.8.8.8 2) { 'OK' } else { 'AVISO' }) 'Internet' '(solo se necesita para correos y actualizaciones)'
 
 Linea $(if (Esperar-Puerto 3306 5) { 'OK' } else { 'FALLA' }) 'MySQL (3306)' 'puerto'
 $t = Measure-Command { try { $web = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1/up' -TimeoutSec 15 } catch { $web = $null } }

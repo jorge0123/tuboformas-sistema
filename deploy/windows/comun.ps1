@@ -98,7 +98,9 @@ function Configurar-PhpApache($h, [string]$laragon, [string]$sitios) {
         Set-Content $propio @('# Lo escribe instalar.ps1: PHP para Apache.', $carga, $iniDir,
             '<FilesMatch "\.php$">', '    SetHandler application/x-httpd-php', '</FilesMatch>', 'DirectoryIndex index.php index.html')
     }
-    $prueba = & $h.Httpd -t 2>&1
+    # httpd -t escribe "Syntax OK" en stderr: con 'Stop', PowerShell 5.1 lo tomaría como error. Vale el código de salida.
+    $antes = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    try { $prueba = (& $h.Httpd -t 2>&1 | ForEach-Object { "$_" }) -join "`n" } finally { $ErrorActionPreference = $antes }
     if ($LASTEXITCODE -ne 0) { Falla "La configuración de Apache tiene un error:`n$prueba" }
     Ok "Apache usa PHP de $($h.PhpDir)"
 }
@@ -118,6 +120,16 @@ function Esperar-Puerto([int]$puerto, [int]$segundos = 60) {
     $fin = (Get-Date).AddSeconds($segundos)
     while ((Get-Date) -lt $fin) {
         try { $t = New-Object Net.Sockets.TcpClient; $t.Connect('127.0.0.1', $puerto); $t.Close(); return $true } catch { Start-Sleep -Seconds 2 }
+    }
+    return $false
+}
+
+# ¿Responde al ping? Nunca lanza error: Test-Connection da "Error genérico" (en vez de $false) mientras
+# la tarjeta de red se reconecta, por ejemplo justo después de fijar la IP. Reintenta $intentos veces.
+function Responde-Ping([string]$direccion, [int]$intentos = 1) {
+    for ($i = 1; $i -le $intentos; $i++) {
+        try { if (Test-Connection -ComputerName $direccion -Count 1 -Quiet -ErrorAction Stop) { return $true } } catch {}
+        if ($i -lt $intentos) { Start-Sleep -Seconds 2 }
     }
     return $false
 }
@@ -196,7 +208,8 @@ function Ajustar-PhpIni($h) {
     $c = $c -replace '^\s*;?\s*memory_limit\s*=.*', 'memory_limit = 512M'
     $c = $c -replace '^\s*;?\s*max_execution_time\s*=.*', 'max_execution_time = 120'
     $c = $c -replace '^\s*;?\s*date\.timezone\s*=.*', 'date.timezone = America/Guatemala'
-    $c = $c -replace '^\s*;?\s*extension_dir\s*=\s*"ext"\s*$', 'extension_dir = "ext"'
+    # Ruta absoluta: con "ext" relativo, Apache (como servicio) busca las extensiones en su propia carpeta y no carga ninguna.
+    $c = $c -replace '^\s*;?\s*extension_dir\s*=\s*"[^"]*ext"\s*$', "extension_dir = `"$(Join-Path $h.PhpDir 'ext')`""
     foreach ($ext in 'curl', 'fileinfo', 'gd', 'intl', 'mbstring', 'openssl', 'pdo_mysql', 'zip') {
         $c = $c -replace "^\s*;\s*extension\s*=\s*(php_)?$ext(\.dll)?\s*$", "extension=$ext"
     }
@@ -212,14 +225,51 @@ function Ajustar-PhpIni($h) {
     Ok "PHP $($h.PhpVersion): archivos hasta 50 MB, hora de Guatemala, OPcache activo."
 }
 
+# Si Laragon nunca se abrió, su httpd.conf es el original de Apache: SRVROOT apunta a C:/Apache24 y no
+# carga los sitios de Laragon. Se deja como lo dejaría Laragon; si ya lo preparó, solo se activan módulos.
+function Preparar-HttpdConf($h, [string]$laragon) {
+    $conf = Join-Path $h.ApacheDir 'conf\httpd.conf'
+    $c = Get-Content $conf
+    $raiz = $h.ApacheDir -replace '\\', '/'
+    $linea = $c | Where-Object { $_ -match '^\s*Define\s+SRVROOT\s' } | Select-Object -First 1
+    if ($linea -and -not (Test-Path (($linea -replace '^\s*Define\s+SRVROOT\s+', '').Trim().Trim('"')))) {
+        $c = $c -replace '^\s*Define\s+SRVROOT\s+.*$', "Define SRVROOT `"$raiz`""
+        Ok "httpd.conf: ServerRoot en $raiz."
+    }
+    # Laravel necesita mod_rewrite (rutas amigables) y el sitio usa mod_deflate (texto comprimido).
+    $c = $c -replace '^\s*#\s*(LoadModule\s+(rewrite|deflate)_module\s.*)$', '$1'
+    # Sin ServerName global Apache avisa (AH00558) en cada arranque.
+    if (-not ($c -match '^\s*ServerName\s')) { $c = $c -replace '^\s*#\s*ServerName\s.*$', 'ServerName localhost:80' }
+    $etc = (Join-Path $laragon 'etc\apache2') -replace '\\', '/'
+    if (-not ($c -match 'sites-enabled')) {
+        $c += @('', '# Lo agrega instalar.ps1 (Laragon nunca se abrió): sitios y PHP de Laragon.', "IncludeOptional `"$etc/sites-enabled/*.conf`"")
+    }
+    if ((Test-Path (Join-Path $laragon 'etc\apache2\mod_php.conf')) -and -not ($c -match 'mod_php\.conf')) {
+        $c += "Include `"$etc/mod_php.conf`""
+    }
+    Set-Content $conf $c
+}
+
 # Publica el sitio en Apache (puerto 80, sitio por defecto: responde a la IP y a tuboformas.local).
 function Publicar-Sitio($h, [string]$laragon) {
     $publico = (Join-Path (Carpeta-Proyecto) 'public') -replace '\\', '/'
     $sitios = Join-Path $laragon 'etc\apache2\sites-enabled'
     New-Item -ItemType Directory -Force -Path $sitios | Out-Null
+    Preparar-HttpdConf $h $laragon
     (Get-Content (Join-Path $PSScriptRoot 'apache-tuboformas.conf')) -replace '__PUBLICO__', $publico |
         Set-Content (Join-Path $sitios '00-0-tuboformas.conf')
     Configurar-PhpApache $h $laragon $sitios
+    Entorno-ServicioApache $h
+}
+
+# Extensiones como intl, curl u openssl necesitan DLL que están en la carpeta de PHP (ICU, libssl…).
+# Laragon la pone en el PATH; un servicio de Windows no la tiene, así que se agrega al PATH del servicio.
+function Entorno-ServicioApache($h) {
+    $clave = 'HKLM:\SYSTEM\CurrentControlSet\Services\TuboformasApache'
+    if (-not (Test-Path $clave)) { return }
+    $ruta = "$($h.PhpDir);$([Environment]::GetEnvironmentVariable('Path', 'Machine'))"
+    New-ItemProperty $clave -Name Environment -PropertyType MultiString -Value @("PATH=$ruta") -Force | Out-Null
+    Ok 'El servicio de Apache encuentra las librerías de PHP.'
 }
 
 # Las tres tareas del sistema. Se vuelven a registrar en cada instalación/actualización.

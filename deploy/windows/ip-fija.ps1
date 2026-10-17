@@ -56,7 +56,7 @@ if ($actual.IPAddress -eq $Ip -and $actual.PrefixOrigin -eq 'Manual') {
 
 # ¿Alguien más la usa? Muchos celulares no contestan el ping, pero sí el ARP de la red: se revisan los dos.
 if ($actual.IPAddress -ne $Ip) {
-    $ocupada = Test-Connection -ComputerName $Ip -Count 2 -Quiet
+    $ocupada = Responde-Ping $Ip 2
     if (-not $ocupada) {
         $vecino = Get-NetNeighbor -IPAddress $Ip -ErrorAction SilentlyContinue | Where-Object { $_.State -in 'Reachable', 'Stale', 'Delay', 'Probe', 'Permanent' }
         $ocupada = [bool]$vecino
@@ -90,7 +90,8 @@ if ((Get-NetAdapter -InterfaceIndex $indice).PhysicalMediaType -match '802\.11')
     }
 }
 
-if (Test-Connection -ComputerName $puerta -Count 2 -Quiet) {
+# El WiFi tarda unos segundos en reconectarse con la IP nueva: se le da hasta ~30 s.
+if (Responde-Ping $puerta 15) {
     Ok "Listo. La dirección del sistema es http://$Ip"
 } else {
     Aviso "La IP quedó puesta pero no responde la puerta de enlace $puerta. Revisa la conexión o vuelve atrás con: .\ip-fija.ps1 -Volver"
