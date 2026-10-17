@@ -2,18 +2,15 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/** Humo: el sistema arranca, el login carga y lo privado exige sesión. */
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_el_sistema_responde_y_pide_iniciar_sesion(): void
     {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
+        $this->get('/up')->assertOk();
+        $this->get('/login')->assertOk()->assertSee('Iniciar sesión');
+        $this->get('/')->assertRedirect('/login');
     }
 }

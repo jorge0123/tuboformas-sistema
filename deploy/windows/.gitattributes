@@ -1,3 +1,4 @@
 *.ps1 text eol=crlf
 *.conf text eol=crlf
 .env.planta text eol=crlf
+*.bat text eol=crlf

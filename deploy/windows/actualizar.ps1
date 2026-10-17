@@ -16,6 +16,8 @@ Exigir-Administrador
 $proyecto = Carpeta-Proyecto
 $h = Herramientas $Laragon
 $env:Path = "$($h.PhpDir);$($h.NodeDir);$env:Path"
+Git-Laragon $Laragon
+Start-Transcript -Path (Join-Path $PSScriptRoot 'instalacion.log') -Append | Out-Null
 
 Paso 'Respaldo antes de actualizar'
 & (Join-Path $PSScriptRoot 'respaldo.ps1') -Laragon $Laragon
@@ -37,8 +39,15 @@ try {
     Artisan $h $proyecto @('db:seed', '--class=RolesPermisosSeeder', '--force')
     Artisan $h $proyecto @('optimize:clear')
     Artisan $h $proyecto @('optimize')
+
+    # Lo del servidor también se actualiza (sitio, PHP, tareas del vigilante y respaldo).
+    Paso 'Servidor'
+    Ajustar-PhpIni $h
+    Publicar-Sitio $h $Laragon
+    Registrar-Tareas $h
 } finally {
     Artisan $h $proyecto @('up')
 }
-if (Get-Service TuboformasApache -ErrorAction SilentlyContinue) { Restart-Service TuboformasApache }
+if (Get-Service TuboformasApache -ErrorAction SilentlyContinue) { Restart-Service TuboformasApache -Force }
 Ok 'Sistema actualizado.'
+Stop-Transcript | Out-Null

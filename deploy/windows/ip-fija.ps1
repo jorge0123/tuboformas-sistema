@@ -54,8 +54,14 @@ if ($actual.IPAddress -eq $Ip -and $actual.PrefixOrigin -eq 'Manual') {
     return
 }
 
-if ($actual.IPAddress -ne $Ip -and (Test-Connection -ComputerName $Ip -Count 2 -Quiet)) {
-    Falla "La IP $Ip ya la está usando otro equipo. Elige otra: .\ip-fija.ps1 -Ip <otra dirección de la misma red>"
+# ¿Alguien más la usa? Muchos celulares no contestan el ping, pero sí el ARP de la red: se revisan los dos.
+if ($actual.IPAddress -ne $Ip) {
+    $ocupada = Test-Connection -ComputerName $Ip -Count 2 -Quiet
+    if (-not $ocupada) {
+        $vecino = Get-NetNeighbor -IPAddress $Ip -ErrorAction SilentlyContinue | Where-Object { $_.State -in 'Reachable', 'Stale', 'Delay', 'Probe', 'Permanent' }
+        $ocupada = [bool]$vecino
+    }
+    if ($ocupada) { Falla "La IP $Ip ya la está usando otro equipo. Elige otra: .\ip-fija.ps1 -Ip <otra dirección de la misma red>" }
 }
 
 if (-not $SinPreguntar) {
@@ -71,6 +77,18 @@ Remove-NetRoute -InterfaceIndex $indice -DestinationPrefix '0.0.0.0/0' -Confirm:
 New-NetIPAddress -InterfaceIndex $indice -IPAddress $Ip -PrefixLength $prefijo -DefaultGateway $puerta | Out-Null
 Set-DnsClientServerAddress -InterfaceIndex $indice -ServerAddresses $dns
 Start-Sleep -Seconds 3
+
+# La tarjeta de red no se apaga para ahorrar energía (si se apaga, el sistema desaparece de la red).
+Disable-NetAdapterPowerManagement -Name $adaptador -ErrorAction SilentlyContinue | Out-Null
+# Por WiFi: que vuelva a conectarse sola a esta red si se cae.
+if ((Get-NetAdapter -InterfaceIndex $indice).PhysicalMediaType -match '802\.11') {
+    $ssid = (netsh wlan show interfaces) -match '^\s*SSID\s*:' | Select-Object -First 1
+    if ($ssid) {
+        $ssid = ($ssid -split ':', 2)[1].Trim()
+        netsh wlan set profileparameter name="$ssid" connectionmode=auto | Out-Null
+        Ok "WiFi '$ssid': se reconecta sola. Si se puede, mejor conecta la PC por cable."
+    }
+}
 
 if (Test-Connection -ComputerName $puerta -Count 2 -Quiet) {
     Ok "Listo. La dirección del sistema es http://$Ip"

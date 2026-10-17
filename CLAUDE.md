@@ -5,7 +5,7 @@ La lógica del negocio, los roles y las reglas están en `docs/DISENO.md`: léel
 
 ## Stack
 - Laravel 12 (PHP 8.2+), MySQL 8, Blade + Tailwind v4 + Alpine.js, spatie/laravel-permission.
-- Se instala en una PC con Windows de la planta (Laragon, IP fija, servicios): `docs/INSTALACION-WINDOWS.md` y scripts en `deploy/windows/`. También puede ir a cPanel: `docs/DESPLIEGUE.md`.
+- Se instala en una PC con Windows de la planta (Laragon, IP fija, servicios): `docs/INSTALACION-WINDOWS.md` y scripts en `deploy/windows/`. Los `.ps1` van en UTF-8 **con** BOM (Windows PowerShell 5.1 los lee en ANSI si no); `.env.planta` y `.conf` **sin** BOM (Laravel y Apache no lo aceptan). El vigilante avisa a los admins con `php artisan sistema:avisar`. También puede ir a cPanel: `docs/DESPLIEGUE.md`.
 
 ## Local
 - Laragon (MySQL root sin contraseña, base `tuboformas`).
