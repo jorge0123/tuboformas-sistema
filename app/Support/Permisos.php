@@ -14,6 +14,9 @@ class Permisos
 {
     public const SUPER_ADMIN = 'super_admin';
 
+    /** Roles con una sola sesión activa: al entrar se cierran sus otras sesiones (AuthController). */
+    public const ROLES_SESION_UNICA = [self::SUPER_ADMIN, 'administrador'];
+
     /** Módulo => [nombre, [permiso => descripción]] */
     public static function modulos(): array
     {

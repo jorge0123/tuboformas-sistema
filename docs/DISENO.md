@@ -209,6 +209,9 @@ pasan a **Consulta** hasta que un administrador les asigne otro rol.
 Reglas que no dependen de la matriz:
 - "Ver sus OT" = OT donde es responsable, ayudante o solicitante.
 - Solo un super administrador puede crear, editar o desactivar a otro super administrador.
+- Super administrador y administrador tienen **una sola sesión activa**: al entrar se cierran sus
+  otras sesiones y su "Recordarme" en otros equipos (gana el último). Los demás roles pueden tener
+  varias (celular y PC). Roles en `Permisos::ROLES_SESION_UNICA`.
 - Los usuarios se desactivan, no se borran (conservan su historial).
 
 ## 4. Arquitectura
