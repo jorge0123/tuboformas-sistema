@@ -42,10 +42,11 @@
             <form method="POST" action="{{ url('/login') }}" class="mt-8 space-y-5" x-data="{ ver: false, enviando: false }" @submit="enviando = true">
                 @csrf
                 <div>
-                    <label for="username" class="etiqueta">Usuario o correo</label>
+                    <label for="username" class="etiqueta">Usuario</label>
                     <div class="relative">
                         <span class="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-carbon-400"><x-icono n="usuario" clase="size-4" /></span>
                         <input id="username" name="username" value="{{ old('username') }}" required autofocus autocomplete="username"
+                               autocapitalize="none" autocorrect="off" spellcheck="false"
                                class="campo py-2.5 pl-9 @error('username') campo-error @enderror" placeholder="ej. jperez">
                     </div>
                     @error('username')<p class="error">{{ $message }}</p>@enderror

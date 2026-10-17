@@ -24,9 +24,8 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        // Se puede entrar con usuario o con correo.
-        $campo = str_contains($datos['username'], '@') ? 'email' : 'username';
-        $credenciales = [$campo => $datos['username'], 'password' => $datos['password'], 'activo' => true];
+        // Se entra solo con el nombre de usuario (no con el correo).
+        $credenciales = ['username' => $datos['username'], 'password' => $datos['password'], 'activo' => true];
 
         if (! Auth::attempt($credenciales, $request->boolean('recordar'))) {
             return back()->withInput($request->only('username'))
